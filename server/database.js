@@ -9,6 +9,10 @@ let { log } = require('../common/utilities.js');
 
 let connection;
 
+let connectionWrapper = { //use a wrapper that will always point to the correct database object
+	query: (...args) => connection.query(...args)
+};
+
 const handleDisconnect = () => {
 	//use the config
 	connection = mysql.createConnection({
@@ -41,7 +45,7 @@ const handleDisconnect = () => {
 	});
 
 	//finally
-	return connection; //TODO: test that this actually bloody works
+	return connectionWrapper; //TODO: test that this actually bloody works
 };
 
 module.exports = {
