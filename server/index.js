@@ -22,8 +22,8 @@ app.get('/newsheadersrequest', news.newsHeadersRequest());
 app.post('/newsheadersrequest', news.newsHeadersRequest());
 
 //database
-let { connectToDatabase } = require('./database.js');
-let connection = connectToDatabase(); //uses .env
+const connectToDatabase = require('./database.js');
+const connection = connectToDatabase(); //uses .env
 
 //handle diagnostics
 let diagnostics = require('./diagnostics.js');

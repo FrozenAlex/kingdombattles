@@ -2,7 +2,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = env => {
 	return {
-		entry: `./src/index${env === 'production' ? '' : '_dev'}.jsx`,
+		entry: `./client/index${env === 'production' ? '' : '_dev'}.jsx`,
 		output: {
 			path: __dirname + '/public/',
 			filename: 'app.bundle.js',

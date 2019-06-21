@@ -1,6 +1,7 @@
 #directories
 logs/**
 /**/coverage
+/**/.nyc_output
 /**/node_modules
 /**/dl
 

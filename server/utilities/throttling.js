@@ -1,5 +1,7 @@
-let CronJob = require('cron').CronJob;
+//libraries
+const { CronJob } = require('cron');
 
+//globals
 let emails = [];
 
 function throttle(email) {
@@ -12,6 +14,7 @@ function isThrottled(email) {
 	}
 
 	if ( Math.abs(emails[email] - new Date()) / 1000 > 10) { //10 seconds
+		delete emails[email]; //remove from the cache
 		return false;
 	}
 

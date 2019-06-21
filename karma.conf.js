@@ -19,7 +19,7 @@ module.exports = function(config) {
 
 		// list of files / patterns to load in the browser
 		files: [
-			'test/**/*.js'
+			'test/client/**/*_spec.js*'
 		],
 
 		// list of files / patterns to exclude
@@ -29,7 +29,7 @@ module.exports = function(config) {
 		// preprocess matching files before serving them to the browser
 		// available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
 		preprocessors: {
-			'test/**/*.js*': ['webpack']
+			'test/client/**/*_spec.js*': ['coverage', 'webpack']
 		},
 
 		webpack: webpackConfig('testing'),
@@ -46,10 +46,10 @@ module.exports = function(config) {
 		colors: true,
 
 		//opera takes time to start up
-		captureTimeout: 60000, // it was already there
-		browserDisconnectTimeout: 60000,
-		browserDisconnectTolerance: 1,
-		browserNoActivityTimeout: 60000,
+//		captureTimeout: 60000, // it was already there
+//		browserDisconnectTimeout: 60000,
+//		browserDisconnectTolerance: 1,
+//		browserNoActivityTimeout: 60000,
 
 		// level of logging
 		// possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG

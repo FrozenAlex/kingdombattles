@@ -124,13 +124,6 @@ const getLadderData = (connection, field, start, length, cb) => {
 	});
 };
 
-const logActivity = (connection, id) => {
-	let query = 'UPDATE accounts SET lastActivityTime = CURRENT_TIMESTAMP() WHERE id = ?;';
-	connection.query(query, [id], (err) => {
-		if (err) throw err;
-	});
-};
-
 module.exports = {
 	getEquipmentStatistics: getEquipmentStatistics,
 	getEquipmentOwned: getEquipmentOwned,

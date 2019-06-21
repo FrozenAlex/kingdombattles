@@ -5,12 +5,14 @@ require('dotenv').config();
 let mysql = require('mysql');
 
 //utilities
-let { log } = require('../common/utilities.js');
+let { log } = require('./logging.js');
 
 let connection;
 
 let connectionWrapper = { //use a wrapper that will always point to the correct database object
-	query: (...args) => connection.query(...args)
+	query: (...args) => connection.query(...args),
+	close: () => connection.close(),
+	unwrap: () => connection
 };
 
 const handleDisconnect = () => {
@@ -48,6 +50,4 @@ const handleDisconnect = () => {
 	return connectionWrapper; //TODO: test that this actually bloody works
 };
 
-module.exports = {
-	connectToDatabase: handleDisconnect
-};
+module.exports = handleDisconnect;
