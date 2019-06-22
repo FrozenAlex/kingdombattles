@@ -9,9 +9,9 @@ rewiremock.enable();
 const { log, logActivity } = require('../../../server/utilities/logging.js');
 const connectToDatabase = require('../../../server/utilities/database.js');
 
-let connection;
-
 rewiremock.disable();
+
+let connection;
 
 describe('Server logging', () => {
 	beforeAll(() => {

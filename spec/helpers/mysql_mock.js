@@ -4,6 +4,7 @@ const mysqlMock = {
 			//the mock connection
 			connected: false,
 			lastQuery: '',
+			nextResult: null,
 
 			connect(cb) {
 				if (this.connected) {
@@ -35,8 +36,12 @@ const mysqlMock = {
 				let counter = 0;
 				this.lastQuery = query.replace(/\?/g, () => `${params[counter++]}`);
 
-				if (typeof(cb) === 'function') {
-					return new Promise((resolve, reject) => cb());
+				if (typeof(cb) !== 'function') {
+					return new Promise((resolve, reject) => resolve(this.nextResult));
+				}
+				else {
+					cb(this.nextResult);
+					return Promise.resolve(1);
 				}
 			},
 
