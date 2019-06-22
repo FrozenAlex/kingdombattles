@@ -13,7 +13,7 @@ function isThrottled(email) {
 		return false;
 	}
 
-	if ( Math.abs(emails[email] - new Date()) / 1000 > 10) { //10 seconds
+	if ( Math.abs(emails[email] - new Date()) / 1000 >= 10) { //10 seconds
 		delete emails[email]; //remove from the cache
 		return false;
 	}
