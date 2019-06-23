@@ -4,7 +4,7 @@ require('dotenv').config();
 //switches
 let isThrottledSwitch = false;
 let sendmailSwitch = false;
-let skipRandomSwitch = false;
+let skipBodySwitch = false;
 
 //objects
 let connection;
@@ -28,7 +28,7 @@ rewiremock('sendmail').with((config) => {
 		expect(parameters.to).toEqual('example@example.com');
 		expect(parameters.subject).toEqual('Email Verification');
 
-		if (!skipRandomSwitch) { //skip this because of non-deterministic results for rand
+		if (!skipBodySwitch) { //skip this because of non-deterministic results for rand
 			expect(parameters.text).toEqual(`Hello! Please visit the following address to verify your account: http://${process.env.WEB_ADDRESS}/verifyrequest?email=${parameters.to}&verify=0`);
 		}
 
@@ -118,19 +118,19 @@ describe('Signup system', () => {
 		//check banning
 		connection.unwrap().nextResult = [{ total: 1, email: 0, username: 0 }]; //result of bannedEmails
 		await validateSignup(connection)(formParams)
-			.then(() => fail('Banned emails don\'t work'), (result) => expect(result.msg).toEqual('This email account has been banned!'));
+			.then(() => fail('Banned emails don\'t work'), (result) => expect(result.msg).toEqual('This email account has been banned!'))
 		;
 
 		//email exists
 		connection.unwrap().nextResult = [{total: 0, email: 1, username: 0 }]; //results for existing emails
 		await validateSignup(connection)(formParams)
-			.then(() => fail('Existing email check doesn\'t work'), (result) => expect(result.msg).toEqual('Email already registered!'));
+			.then(() => fail('Existing email check doesn\'t work'), (result) => expect(result.msg).toEqual('Email already registered!'))
 		;
 
 		//username exists
 		connection.unwrap().nextResult = [{total: 0, email: 0, username: 1}]; //results for existing usernames
 		await validateSignup(connection)(formParams)
-			.then(() => fail('Existing username check doesn\'t work'), (result) => expect(result.msg).toEqual('Username already registered!'));
+			.then(() => fail('Existing username check doesn\'t work'), (result) => expect(result.msg).toEqual('Username already registered!'))
 		;
 	});
 
@@ -174,20 +174,16 @@ describe('Signup system', () => {
 	});
 
 	it('signupRequest intergration test', async () => {
-		let htmlStatus = 0; //grab the HTML status
-
-		skipRandomSwitch = !skipRandomSwitch;
+		skipBodySwitch = !skipBodySwitch; //skip the body expect() due to non-deterministic results
 
 		sendmailSwitch = !sendmailSwitch; //force an error in the intergration test
 
-		await signupRequest(connection)({}, {status: (s) => { expect(s).toEqual(400); return { write: () => null, json: () => null}}, end: () => null})
-		;
+		await signupRequest(connection)({}, {status: (s) => { expect(s).toEqual(400); return { write: () => null, json: () => null}}, end: () => null});
 
 		sendmailSwitch = !sendmailSwitch; //switch off the error switch
 
 		//victory lap
-		await signupRequest(connection)({}, {status: (s) => { expect(s).toEqual(200); return { write: () => null, json: () => null}}, end: () => null})
-		;
+		await signupRequest(connection)({}, {status: (s) => { expect(s).toEqual(200); return { write: () => null, json: () => null}}, end: () => null});
 	});
 });
 

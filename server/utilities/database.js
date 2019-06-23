@@ -10,7 +10,12 @@ let { log } = require('./logging.js');
 let connection;
 
 let connectionWrapper = { //use a wrapper that will always point to the correct database object
-	query: (...args) => connection.query(...args),
+	query: (sql, args) => new Promise( (resolve, reject) => {
+		connection.query(sql, args, (err, rows) => {
+			if (err) return reject(err);
+			return resolve(rows);
+		});
+	}),
 	close: () => connection.close(),
 	unwrap: () => connection
 };
@@ -47,7 +52,7 @@ const handleDisconnect = () => {
 	});
 
 	//finally
-	return connectionWrapper; //TODO: test that this actually bloody works
+	return connectionWrapper;
 };
 
 module.exports = handleDisconnect;

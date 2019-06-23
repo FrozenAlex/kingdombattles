@@ -21,7 +21,7 @@ const mysqlMock = {
 				//DO NOTHING
 			},
 
-			async query(query, params, cb) {
+			query(query, params, cb) {
 				if (!this.connected) {
 					throw 'mysqlMock not connected';
 				}
@@ -36,12 +36,9 @@ const mysqlMock = {
 				let counter = 0;
 				this.lastQuery = query.replace(/\?/g, () => `${params[counter++]}`);
 
-				if (typeof(cb) !== 'function') {
-					return new Promise((resolve, reject) => resolve(this.nextResult));
-				}
-				else {
-					cb(this.nextResult);
-					return Promise.resolve(1);
+				//no promises afterall
+				if (cb) {
+					cb(undefined, this.nextResult);
 				}
 			},
 

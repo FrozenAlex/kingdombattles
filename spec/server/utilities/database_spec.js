@@ -2,9 +2,6 @@
 const rewiremock = require('rewiremock/node');
 rewiremock('mysql').with(require('../../helpers/mysql_mock.js'));
 
-//libraries
-require("jasmine-expect-count");
-
 //the functions to test
 rewiremock.enable();
 
