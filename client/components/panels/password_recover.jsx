@@ -1,5 +1,5 @@
 import React from 'react';
-import { validateEmail } from '../../../common/utilities.js'; //TODO: move utilities to a better position
+import validateEmail from '../utilities/validate_email.js';
 import PropTypes from 'prop-types';
 
 class PasswordRecover extends React.Component {

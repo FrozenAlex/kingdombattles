@@ -2,9 +2,9 @@
 require('dotenv').config();
 
 //utilities
-let { log } = require('../common/utilities.js');
+let { log, logActivity } = require('./utilities/logging.js');
 
-let { getEquipmentStatistics, getEquipmentOwned, isAttacking, isSpying, logActivity } = require('./utilities.js');
+let { getEquipmentStatistics, getEquipmentOwned, isAttacking, isSpying } = require('./break_this_up.js');
 
 const equipmentRequest = (connection) => (req, res) => {
 	//validate the credentials

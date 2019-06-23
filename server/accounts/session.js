@@ -1,17 +1,13 @@
 //libraries
 const util = require('util');
 const bcrypt = require('bcrypt');
-const formidable = require('formidable');
 
 //utilities
 const { log, logActivity } = require('../utilities/logging.js');
 const validateEmail = require('../utilities/validate_email.js');
+const formidablePromise = require('../utilities/formidable_promise.js');
 
 const loginRequest = (connection) => (req, res) => {
-	//formidable handles forms
-	const form = formidable.IncomingForm();
-	const formParse = util.promisify(form.parse);
-
 	//handle all outcomes
 	const handleRejection = (obj) => {
 		res.status(400).write(log(obj.msg, obj.extra.toString()));
@@ -24,7 +20,7 @@ const loginRequest = (connection) => (req, res) => {
 		res.end();
 	}
 
-	return formParse(req)
+	return formidablePromise(req)
 		.then(validateFields(connection))
 		.then(validatePassword(connection))
 		.then(createNewSession(connection))
@@ -33,7 +29,7 @@ const loginRequest = (connection) => (req, res) => {
 	;
 };
 
-const validateFields = (connection) => (fields) => new Promise( async (resolve, reject) => {
+const validateFields = (connection) => ({ fields }) => new Promise( async (resolve, reject) => {
 	//validate email, username and password
 	if (!validateEmail(fields.email) || fields.password.length < 8) { //TODO: global password length
 		return reject({msg: 'Invalid login data', extra: [fields.email] }); //WARNING: NEVER LOG PASSWORDS. EVER.
@@ -109,10 +105,13 @@ const logoutRequest = (connection) => (req, res) => {
 };
 
 module.exports = {
+	//public API
 	loginRequest: loginRequest,
+	logoutRequest: logoutRequest,
+
+	//for testing
 	validateFields: validateFields,
 	validatePassword: validatePassword,
-	createNewSession: createNewSession,
-	logoutRequest: logoutRequest
+	createNewSession: createNewSession
 };
 

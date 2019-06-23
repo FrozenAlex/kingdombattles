@@ -199,3 +199,8 @@ const passwordResetRequest = (connection) => (req, res) => {
 	});
 };
 
+module.exports = {
+	passwordChangeRequest: passwordChangeRequest,
+	passwordRecoverRequest: passwordRecoverRequest,
+	passwordResetRequest: passwordResetRequest
+};

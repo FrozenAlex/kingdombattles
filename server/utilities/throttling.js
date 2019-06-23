@@ -4,11 +4,11 @@ const { CronJob } = require('cron');
 //globals
 let emails = [];
 
-function throttle(email) {
+const throttle = (email) => {
 	emails[email] = new Date();
 }
 
-function isThrottled(email) {
+const isThrottled = (email) => {
 	if (emails[email] === undefined) {
 		return false;
 	}

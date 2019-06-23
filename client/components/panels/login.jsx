@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 
 import { login } from '../../actions/account.js';
-import { validateEmail } from '../../../common/utilities.js';
+import validateEmail from '../utilities/validate_email.js';
 
 class Login extends React.Component {
 	constructor(props) {

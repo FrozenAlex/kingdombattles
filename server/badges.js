@@ -5,9 +5,9 @@ require('dotenv').config();
 let CronJob = require('cron').CronJob;
 
 //utilities
-let { log } = require('../common/utilities.js');
+let { log, logActivity } = require('./utilities/logging.js');
 
-let { logActivity, getBadgesStatistics, getBadgesOwned, getLadderData } = require('./utilities.js');
+let { getBadgesStatistics, getBadgesOwned, getLadderData } = require('./break_this_up.js');
 
 const listRequest = (connection) => (req, res) => {
 	getBadgesStatistics((err, results) => {

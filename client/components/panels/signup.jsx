@@ -1,5 +1,5 @@
 import React from 'react';
-import { validateEmail } from '../../../common/utilities.js';
+import validateEmail from '../utilities/validate_email.js';
 import PropTypes from 'prop-types';
 
 class Signup extends React.Component {

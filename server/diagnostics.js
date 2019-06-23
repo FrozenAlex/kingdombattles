@@ -5,7 +5,7 @@ require('dotenv').config();
 let CronJob = require('cron').CronJob;
 
 //utilities
-let { log } = require('../common/utilities.js');
+let { log } = require('./utilities/logging.js');
 
 const runDailyDiagnostics = (connection) => {
 	let dailyJob = new CronJob('0 0 0 * * *', () => {

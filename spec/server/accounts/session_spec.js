@@ -10,8 +10,8 @@ rewiremock('mysql').with(require('../../helpers/mysql_mock.js'));
 rewiremock('formidable').with({
 	IncomingForm() {
 		return {
-			parse(parameters, next) {
-				next(undefined, formParams);
+			parse(req, next) {
+				next(undefined, formParams.fields, formParams.files);
 			}
 		};
 	}
@@ -50,13 +50,15 @@ describe('Sessions system', () => {
 
 	beforeEach(() => {
 		formParams = {
-			email: 'example@example.com',
-			username: 'Nobody',
-			password: 'helloworld'
+			fields: {
+				email: 'example@example.com',
+				username: 'Nobody',
+				password: 'helloworld'
+			}
 		};
 	});
 
-	it('validateFields', () => {
+	it('validateFields results', () => {
 		//banned accounts can't login
 		connection.unwrap().nextResult = [{total: 1}];
 
@@ -68,11 +70,11 @@ describe('Sessions system', () => {
 		connection.unwrap().nextResult = [{total: 0}];
 
 		validateFields(connection)(formParams)
-			.then((obj) => expect(obj).toEqual(formParams))
+			.then((obj) => expect(obj).toEqual(formParams.fields))
 		;
 	});
 
-	it('validatePassword', () => {
+	it('validatePassword results', () => {
 		//account doesn't exist
 		connection.unwrap().nextResult = [];
 
@@ -93,7 +95,7 @@ describe('Sessions system', () => {
 		;
 	});
 
-	it('createNewSession', async () => {
+	it('createNewSession results', async () => {
 		const accountRecord = {
 			id: 0,
 			email: 'example@example.com',
@@ -107,7 +109,17 @@ describe('Sessions system', () => {
 		expect(result.username).toEqual(accountRecord.username);
 	});
 
-	it('logoutRequest', () => {
+	it('loginRequest intergration test', async () => {
+		//invalid database state
+		connection.unwrap().nextResult = [{total: 1}];
+		await loginRequest(connection)({}, {status: (s) => { expect(s).toEqual(400); return { write: () => null, json: () => null}}, end: () => null});
+
+		//victory lap
+		connection.unwrap().nextResult = [{ id: 1, email: 'example@example.com', username: 'Nobody', salt: 0, hash: 12345 }];
+		await loginRequest(connection)({}, {status: (s) => { expect(s).toEqual(200); return { write: () => null, json: () => null}}, end: () => null});
+	});
+
+	it('logoutRequest results', () => {
 		logoutRequest(connection)({ body: {id: 0, token: 0} }, { end:() => {
 			//weird putting this into end(), but it works!
 			expect(console.log).toHaveBeenCalledWith('log Tue Jan 1 2019 00:00:00 GMT+1000: Logged out (0,0)');

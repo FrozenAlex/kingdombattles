@@ -6,9 +6,9 @@ let CronJob = require('cron').CronJob;
 
 //utilities
 let { logDiagnostics } = require('./diagnostics.js');
-let { log } = require('../common/utilities.js');
+let { log, logActivity } = require('./utilities/logging.js');
 
-let { getEquipmentStatistics, isAttacking, logActivity } = require('./utilities.js');
+let { getEquipmentStatistics, isAttacking } = require('./break_this_up.js');
 let { captureTheFlag } = require('./badges.js');
 
 const attackRequest = (connection) => (req, res) => {

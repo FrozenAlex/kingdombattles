@@ -6,9 +6,9 @@ let CronJob = require('cron').CronJob;
 
 //utilities
 let { logDiagnostics } = require('./diagnostics.js');
-let { log } = require('../common/utilities.js');
+let { log } = require('./utilities/logging.js');
 
-let { getEquipmentStatistics, isSpying, isAttacking, logActivity } = require('./utilities.js');
+let { getEquipmentStatistics, isSpying, isAttacking, logActivity } = require('./break_this_up.js');
 
 const spyRequest = (connection) => (req, res) => {
 	//verify the attacker's credentials (only the attacker can launch an attack)

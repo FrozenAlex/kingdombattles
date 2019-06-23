@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 //utilities
-let { log } = require('../common/utilities.js');
+let { log, logActivity } = require('./utilities/logging.js');
 
 const getEquipmentStatistics = (cb) => {
 	//TODO: apiVisible field

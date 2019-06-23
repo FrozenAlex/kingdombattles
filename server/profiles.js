@@ -4,11 +4,11 @@ require('dotenv').config();
 //libraries
 let CronJob = require('cron').CronJob;
 
-let { getBadgesStatistics, getBadgesOwned, isAttacking, isSpying, getLadderData, logActivity } = require('./utilities.js');
+let { getBadgesStatistics, getBadgesOwned, isAttacking, isSpying, getLadderData } = require('./break_this_up.js');
 
 //utilities
 let { logDiagnostics } = require('./diagnostics.js');
-let { log } = require('../common/utilities.js');
+let { log, logActivity } = require('./utilities/logging.js');
 
 //profile creation & requesting
 const profileCreateRequest = (connection) => (req, res) => {
@@ -60,7 +60,7 @@ const profileRequest = (connection) => (req, res) => {
 function profileRequestInner(connection, req, res, body) {
 	//find the profile
 	let query = 'SELECT * FROM profiles WHERE accountId IN (SELECT accounts.id FROM accounts WHERE username = ?);';
-	connection.query(query, [body.username], (err, results) => {
+	let a = connection.query(query, [body.username], (err, results) => {
 		if (err) throw err;
 
 		if (results.length !== 1) {

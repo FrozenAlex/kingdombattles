@@ -40,8 +40,8 @@ rewiremock('sendmail').with((config) => {
 rewiremock('formidable').with({
 	IncomingForm() {
 		return {
-			parse(parameters, next) {
-				next(undefined, formParams);
+			parse(req, next) {
+				next(undefined, formParams.fields, formParams.files);
 			}
 		};
 	}
@@ -72,10 +72,15 @@ describe('Signup system', () => {
 
 	beforeEach(() => {
 		formParams = {
-			email: 'example@example.com',
-			username: 'Nobody',
-			password: 'helloworld',
-			retype: 'helloworld'
+			fields: {
+				email: 'example@example.com',
+				username: 'Nobody',
+				password: 'helloworld',
+				retype: 'helloworld'
+			},
+			//files: {
+			//	name: 'file.png'
+			//}
 		};
 	});
 
@@ -91,27 +96,27 @@ describe('Signup system', () => {
 
 	it('validateSignup invalid fields', async () => {
 		//email
-		await validateSignup(connection)({...formParams, email: 'invalid email'})
+		await validateSignup(connection)({fields: {...formParams.fields, email: 'invalid email'}})
 			.then(() => fail('Email not invalid'), result => expect(result.msg).toEqual('Invalid signup data'))
 		;
 
 		//username too long
-		await validateSignup(connection)({...formParams, username: '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890x'})
+		await validateSignup(connection)({fields: {...formParams.fields, username: '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890x'}})
 			.then(() => fail('Username not invalid'), result => expect(result.msg).toEqual('Invalid signup data'))
 		;
 
 		//username too short
-		await validateSignup(connection)({...formParams, username: '123'})
+		await validateSignup(connection)({fields: {...formParams.fields, username: '123'}})
 			.then(() => fail('Username not invalid'), result => expect(result.msg).toEqual('Invalid signup data'))
 		;
 
 		//password too short
-		await validateSignup(connection)({...formParams, password: '1234567', retype: '1234567'})
+		await validateSignup(connection)({fields: {...formParams.fields, password: '1234567', retype: '1234567'}})
 			.then(() => fail('Password not invalid'), result => expect(result.msg).toEqual('Invalid signup data'))
 		;
 
 		//retype doesn't match
-		await validateSignup(connection)({...formParams, password: '12345678', retype: '123456789'})
+		await validateSignup(connection)({fields: {...formParams.fields, password: '12345678', retype: '123456789'}})
 			.then(() => fail('Retype not invalid'), result => expect(result.msg).toEqual('Invalid signup data'))
 		;
 
@@ -139,26 +144,26 @@ describe('Signup system', () => {
 		connection.unwrap().nextResult = [{total: 0, email: 0, username: 0}];
 
 		//username not too long, not too short, password not to short
-		await validateSignup(connection)({...formParams, username: '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890'})
-			.then(() => validateSignup(connection)({...formParams, username: '1234'}))
-			.then(() => validateSignup(connection)({...formParams, password: '12345678', retype: '12345678'}))
+		await validateSignup(connection)({fields: {...formParams.fields, username: '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890'}})
+			.then(() => validateSignup(connection)({fields: {...formParams.fields, username: '1234'}}))
+			.then(() => validateSignup(connection)({fields: {...formParams.fields, password: '12345678', retype: '12345678'}}))
 		;
 
 		//all went well
 		await validateSignup(connection)(formParams)
-			.then((fields) => expect(fields).toEqual(formParams))
+			.then((fields) => expect(fields).toEqual(formParams.fields))
 		;
 	});
 
 	it('generateSaltAndHash results', async () => {
-		return generateSaltAndHash(connection)(formParams);
+		return generateSaltAndHash(connection)(formParams.fields);
 	});
 
 	it('sendSignupEmail results', async () => {
 		//check failure
 		sendmailSwitch = !sendmailSwitch;
 
-		const failObj = await sendSignupEmail()({rand: 0, fields: formParams})
+		const failObj = await sendSignupEmail()({rand: 0, fields: formParams.fields})
 			.then(() => fail('send mail succeeded when it should\'ve failed'), e => e)
 		;
 
@@ -167,7 +172,7 @@ describe('Signup system', () => {
 		//check success
 		sendmailSwitch = !sendmailSwitch;
 
-		const successObj = await sendSignupEmail()({rand: 0, fields: formParams})
+		const successObj = await sendSignupEmail()({rand: 0, fields: formParams.fields})
 		;
 
 		expect(successObj.msg).toEqual('Verification email sent!');

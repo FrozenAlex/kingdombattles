@@ -4,19 +4,15 @@ require('dotenv').config();
 //libraries
 const util = require('util');
 const bcrypt = require('bcrypt');
-const formidable = require('formidable');
 const sendmail = require('sendmail')({silent: true});
 
 //utilities
 const { log } = require('../utilities/logging.js');
 const { throttle, isThrottled } = require('../utilities/throttling.js');
 const validateEmail = require('../utilities/validate_email.js');
+const formidablePromise = require('../utilities/formidable_promise.js');
 
 const signupRequest = (connection) => (req, res) => {
-	//formidable handles forms
-	const form = formidable.IncomingForm();
-	const formParse = util.promisify(form.parse);
-
 	//handle all outcomes
 	const handleRejection = (obj) => {
 		res.status(400).write(log(obj.msg, obj.extra.toString()));
@@ -29,7 +25,7 @@ const signupRequest = (connection) => (req, res) => {
 		res.end();
 	}
 
-	return formParse(req)
+	return formidablePromise(req)
 		.then(validateSignup(connection))
 		.then(generateSaltAndHash(connection))
 		.then(sendSignupEmail())
@@ -38,10 +34,10 @@ const signupRequest = (connection) => (req, res) => {
 	;
 };
 
-const validateSignup = (connection) => (fields) => new Promise( async (resolve, reject) => {
+const validateSignup = (connection) => ({ fields }) => new Promise( async (resolve, reject) => {
 	//prevent too many clicks via throttle tool
 	if (isThrottled(fields.email)) {
-		return reject({msg: 'Signup throttled', extra: fields.email});
+		return reject({msg: 'Signup throttled', extra: [fields.email]});
 	}
 
 	throttle(fields.email);
@@ -59,7 +55,7 @@ const validateSignup = (connection) => (fields) => new Promise( async (resolve, 
 
 	//if the email has been banned
 	if (banned) {
-		return reject({msg: 'This email account has been banned!', extra: fields.email});
+		return reject({msg: 'This email account has been banned!', extra: [fields.email]});
 	}
 
 	//check if email, username already exists

@@ -9,8 +9,8 @@ let bodyParser = require('body-parser');
 let path = require('path');
 
 //utilities
-let { log } = require('../common/utilities.js');
-let { replacement, stringReplacement } = require('../common/replacement.js');
+let { log } = require('./utilities/logging.js');
+let { replacement } = require('./utilities/replacement.js');
 
 app.use(bodyParser.json());
 
@@ -22,7 +22,7 @@ app.get('/newsheadersrequest', news.newsHeadersRequest());
 app.post('/newsheadersrequest', news.newsHeadersRequest());
 
 //database
-const connectToDatabase = require('./database.js');
+const connectToDatabase = require('./utilities/database.js');
 const connection = connectToDatabase(); //uses .env
 
 //handle diagnostics
@@ -34,9 +34,9 @@ let statistics = require('./statistics.js');
 app.post('/statisticsrequest', statistics.statisticsRequest(connection));
 
 //handle accounts
-let accounts = require('./accounts.js');
+let accounts = require('./accounts/accounts.js');
 app.post('/signuprequest', accounts.signupRequest(connection));
-app.get('/verifyrequest', accounts.verifyRequest(connection));
+app.get('/verifyrequest', accounts.verifyAccountRequest(connection));
 app.post('/loginrequest', accounts.loginRequest(connection));
 app.post('/logoutrequest', accounts.logoutRequest(connection));
 app.post('/passwordchangerequest', accounts.passwordChangeRequest(connection));

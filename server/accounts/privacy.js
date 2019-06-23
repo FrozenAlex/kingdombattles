@@ -54,3 +54,7 @@ const privacySettingsUpdateRequest = (connection) => (req, res) => {
 	});
 };
 
+module.exports = {
+	privacySettingsRequest: privacySettingsRequest,
+	privacySettingsUpdateRequest: privacySettingsUpdateRequest
+};

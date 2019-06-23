@@ -6,7 +6,7 @@ let fs = require('fs');
 let path = require('path');
 let firstline = require('firstline');
 
-let { log } = require('../common/utilities.js');
+let { log } = require('./utilities/logging.js');
 
 const newsRequest = () => (req, res) => {
 	let fpath = path.join(__dirname, '..', 'public', 'news');
