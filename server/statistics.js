@@ -18,11 +18,10 @@ const statisticsRequest = (connection) => (req, res) => {
 		//determine the correct tick rate based on the current gold average
 		//NOTE: copy/pasted
 		let tickRate = (() => {
-			return -60; //TMP: semi-freeze the tick rate
-			if (results[0].goldAverage < 120) return 5;
-			if (results[0].goldAverage < 130) return 15;
-			if (results[0].goldAverage < 140) return 30;
-			return 60; //slow it way down
+			if (results[0].goldAverage < 120) return 30;
+			if (results[0].goldAverage < 130) return 60;
+			if (results[0].goldAverage < 140) return 120;
+			return 180; //slow it way down
 		})();
 
 		let nextTick = Math.abs(tickRate) - (new Date()).getMinutes() % Math.abs(tickRate);
