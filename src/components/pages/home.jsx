@@ -15,7 +15,7 @@ class Home extends React.Component {
 			tagline: ''
 		};
 
-		fetch('/taglinerequest')
+		fetch('/api/tagline')
 			.then(res => res.text())
 			.then(text => this.setState({ tagline: text }))
 			.catch(console.error)
@@ -34,7 +34,7 @@ class Home extends React.Component {
 		//A bit of fun
 		let Tagline = () => {
 			if (this.state.tagline === 'marquee') {
-				return (<div className='marqueeContainer'><em><p className='marquee'>I hope this CSS marquee effect works in all browsers!</p></em></div>);
+				return (<div className='marqueeContainer'><em><p className='marquee'>Why I hope this CSS marquee effect works in all browsers!</p></em></div>);
 			}
 			if (this.state.tagline === 'rainbow') {
 				return (<em><p className='centered rainbowText'>I hope this CSS rainbow effect works in all browsers!</p></em>);
@@ -53,14 +53,13 @@ class Home extends React.Component {
 						<div className='warning' style={warningStyle}>
 							<p>{this.state.warning}</p>
 						</div>
-
 						<h1 className='centered'>About</h1>
 						<Tagline />
 						<br />
-						<Markdown url='/content/blurb.md' />
+						<Markdown url={require('./../../assets/content/blurb.md').default} />
 						<h1 className='centered'>News</h1>
 						<News setWarning={this.setWarning.bind(this)} getFetch={ (fn) => this.setState({ fetch: fn }) } />
-						<p className='right'><Link to='/news'>See all news...</Link></p>
+						<p className='right'><Link to='/news/'>See all news...</Link></p>
 					</div>
 				</div>
 			</div>

@@ -29,7 +29,7 @@ class PrivacyPolicy extends React.Component { //NOTE: react isn't liking the gen
 							<p>{this.state.warning}</p>
 						</div>
 
-						<MarkdownPanel url={'/content/privacy_policy.md'} />
+						<MarkdownPanel url={require('../../assets/content/privacy_policy.md').default} />
 					</div>
 				</div>
 			</div>

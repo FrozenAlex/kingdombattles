@@ -11,7 +11,7 @@ class AttackButton extends React.Component {
 		};
 
 		this.sendRequest(this.props.statusRequest, {/* SO MUCH FOR DEFAULT ARGUMENTS IN NODE */}, this.attackStatus.bind(this));
-		this.sendRequest('/profilerequest', {username: this.props.attacker}, this.profileData.bind(this));
+		this.sendRequest('/api/game/profile/', {username: this.props.attacker}, this.profileData.bind(this));
 	}
 
 	render() {

@@ -12,7 +12,7 @@ class Equipment extends React.Component {
 		};
 
 		if (this.props.getFetch) {
-			this.props.getFetch((field) => this.sendRequest('/equipmentrequest', {field: field} ));
+			this.props.getFetch((field) => this.sendRequest('/api/game/equipment/', {field: field} ));
 		}
 	}
 
@@ -53,8 +53,8 @@ class Equipment extends React.Component {
 							<p className='col centered truncate equipmentTextPadding'><span className='mobile show' style={{whiteSpace: 'pre'}}>Owned: </span>{display[key].owned}</p>
 							<div className='break mobile show' />
 							<div className='col row noCollapse' style={{flex: '1 1 17.5%'}}>
-								{display[key].purchasable ? <button className='col centered truncate' onClick={() => this.sendRequest('/equipmentpurchaserequest', { name: display[key].name, type: display[key].type }) } disabled={display[key].cost > this.props.gold}>Buy <span className='mobile show' style={{whiteSpace:'pre'}}>{display[key].name} </span>({display[key].cost} gold)</button> : <div className='col' />}
-								{display[key].saleable ? <button className='col centered truncate' onClick={() => this.sendRequest('/equipmentsellrequest', { name: display[key].name, type: display[key].type }) } disabled={display[key].owned === 0}>Sell <span className='mobile show' style={{whiteSpace:'pre'}}>{display[key].name} </span>({Math.floor(display[key].cost/2)} gold)</button> : <div className='col' />}
+								{display[key].purchasable ? <button className='col centered truncate' onClick={() => this.sendRequest('/api/game/equipment/purchase', { name: display[key].name, type: display[key].type }) } disabled={display[key].cost > this.props.gold}>Buy <span className='mobile show' style={{whiteSpace:'pre'}}>{display[key].name} </span>({display[key].cost} gold)</button> : <div className='col' />}
+								{display[key].saleable ? <button className='col centered truncate' onClick={() => this.sendRequest('/api/game/equipment/sell', { name: display[key].name, type: display[key].type }) } disabled={display[key].owned === 0}>Sell <span className='mobile show' style={{whiteSpace:'pre'}}>{display[key].name} </span>({Math.floor(display[key].cost/2)} gold)</button> : <div className='col' />}
 							</div>
 						</div>
 						<div className='break' />

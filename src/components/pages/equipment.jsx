@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 //actions
 import { storeScientists, storeGold, clearProfile } from '../../actions/profile.js';
 
+import Axios from 'axios';
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import EquipmentPanel from '../panels/equipment.jsx';
@@ -15,11 +16,10 @@ class Equipment extends React.Component {
 
 		this.state = {
 			fetch: null,
-
 			warning: ''
 		};
 
-		this.sendRequest('/profilerequest', {username: this.props.username});
+		this.getProfile(this.props.username);
 	}
 
 	componentDidMount() {
@@ -35,7 +35,7 @@ class Equipment extends React.Component {
 	componentDidUpdate(prevProps, prevState, snapshot) {
 		if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
 			this.state.fetch();
-			this.sendRequest('/profilerequest', {username: this.props.username});
+			this.sendRequest(this.props.username);
 		}
 	}
 
@@ -63,7 +63,7 @@ class Equipment extends React.Component {
 						setWarning={this.setWarning.bind(this)}
 						scientists={this.props.scientists}
 						gold={this.props.gold}
-						onSuccess={ () => this.sendRequest('/profilerequest', {username: this.props.username}) }
+						onSuccess={() => this.getProfile(this.props.username)}
 					/>
 				</div>
 			</div>
@@ -71,42 +71,33 @@ class Equipment extends React.Component {
 	}
 
 	//gameplay functions
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
+	async getProfile(url, username = "") { //send a unified request, using my credentials
+		// use Axios
+		let response = await Axios.get(`/api/game/profile/${username}`, {
+			withCredentials:true
+		})
 
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.props.storeScientists(json.scientists);
-					this.props.storeGold(json.gold);
-				}
-				else if (xhr.status === 400) {
-					this.setWarning(xhr.responseText);
-				}
-			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			id: this.props.id,
-			token: this.props.token,
-			...args
-		}));
+		//on success
+		this.props.storeScientists(response.data.scientists);
+		this.props.storeGold(response.data.gold);
 	}
 
-	//bound callbacks
-	getFetch(fn) {
-		this.setState({ fetch: fn });
-	}
+	// xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+	// xhr.send(JSON.stringify({
+	// 	id: this.props.id,
+	// 	token: this.props.token,
+	// 	...args
+	// }));
 
-	setWarning(s) {
-		this.setState({ warning: s });
-	}
+
+//bound callbacks
+getFetch(fn) {
+	this.setState({ fetch: fn });
+}
+
+setWarning(s) {
+	this.setState({ warning: s });
+}
 };
 
 Equipment.propTypes = {

@@ -27,7 +27,7 @@ class PasswordReset extends React.Component {
 					<p>{this.state.warning}</p>
 				</div>
 
-				<form action='/passwordresetrequest' method='post' onSubmit={this.submit.bind(this)}>
+				<form action='/api/account/passwordreset' method='post' onSubmit={this.submit.bind(this)}>
 					<div>
 						<label htmlFor='password'>Password:</label>
 						<input id='password' type='password' name='password' value={this.state.password} onChange={this.updatePassword.bind(this)} />

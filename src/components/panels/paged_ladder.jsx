@@ -13,7 +13,7 @@ class PagedLadder extends React.Component {
 		}
 
 		if (props.getFetch) {
-			props.getFetch( () => this.sendRequest('/ladderrequest', {start: this.props.start || 0, length: this.props.length || 20}) );
+			props.getFetch( () => this.sendRequest('/api/game/profile/ladder', {start: this.props.start || 0, length: this.props.length || 20}) );
 		}
 	}
 

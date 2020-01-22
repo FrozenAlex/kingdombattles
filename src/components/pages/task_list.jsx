@@ -31,7 +31,7 @@ class TaskList extends React.Component {
 						</div>
 
 						<h1 className='centered'>Kingdom Battles Developer Task List</h1>
-						<Markdown url='/content/task_list.md' setWarning={this.setWarning.bind(this)} />
+						<Markdown url={require('./../../assets/content/task_list.md').default} setWarning={this.setWarning.bind(this)} />
 					</div>
 				</div>
 			</div>

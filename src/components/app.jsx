@@ -2,16 +2,17 @@ import React from 'react';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import Loadable from 'react-loadable';
 
-//other stuff
+// Styles 
+import '../styles/index.scss';
+
+import badgesdata from '../assets/badges.js'
 import Footer from './panels/footer.jsx';
-import GA from './utilities/google_analytics.jsx';
-import GAdverts from './utilities/google_adverts.jsx';
 
 //lazy route loading (with error handling)
 const LazyRoute = (props) => {
 	const component = Loadable({
 		loader: props.component,
-
+		
 		loading: (props) => {
 			if (props.error) {
 				return (
@@ -53,17 +54,19 @@ export default class App extends React.Component {
 	}
 
 	render() {
+		console.log(badgesdata)
 		return (
 			<div className = 'central'>
-				<GAdverts />
-				<a className='banner' href='/'><img src={'/img/flag_scaled.png'} /></a>
+				{/* <GAdverts /> */}
+				<a className='banner' href='/'>
+					<img src={require('../assets/img/flag_scaled.png').default} /></a>
 				<BrowserRouter>
-					{ GA.init() && <GA.RouteTracker /> }
+					{/* { GA.init() && <GA.RouteTracker /> } */}
 					<Switch>
 						<LazyRoute exact path='/' component={() => import('./pages/home.jsx')} />
 
-						<LazyRoute path='/signup' component={() => import('./pages/signup.jsx')} />
-						<LazyRoute path='/login' component={() => import('./pages/login.jsx')} />
+						<LazyRoute path='/signup/' component={() => import('./pages/signup.jsx')} />
+						<LazyRoute path='/login/' component={() => import('./pages/login.jsx')} />
 						<LazyRoute path='/passwordchange' component={() => import('./pages/password_change.jsx')} />
 						<LazyRoute path='/passwordrecover' component={() => import('./pages/password_recover.jsx')} />
 						<LazyRoute path='/passwordreset' component={() => import('./pages/password_reset.jsx')} />
@@ -74,12 +77,12 @@ export default class App extends React.Component {
 						<LazyRoute path='/combatlog' component={() => import('./pages/combat_log.jsx')} />
 						<LazyRoute path='/spyinglog' component={() => import('./pages/spying_log.jsx')} />
 						<LazyRoute path='/badges/list' component={() => import('./pages/badge_list.jsx')} />
-						<LazyRoute path='/badges' component={() => import('./pages/badge_select.jsx')} />
+						<LazyRoute path='/badges/' component={() => import('./pages/badge_select.jsx')} />
 
 						<LazyRoute path='/tasklist' component={() => import('./pages/task_list.jsx')} />
-						<LazyRoute path='/patronlist' component={() => import('./pages/patron_list.jsx')} />
+						<LazyRoute path='/patrons/' component={() => import('./pages/patron_list.jsx')} />
 						<LazyRoute path='/news/:postId' component={() => import('./pages/news.jsx')} />
-						<LazyRoute path='/news' component={() => import('./pages/news_index.jsx')} />
+						<LazyRoute path='/news/' component={() => import('./pages/news_index.jsx')} />
 						<LazyRoute path='/rules' component={() => import('./pages/rules.jsx')} />
 						<LazyRoute path='/statistics' component={() => import('./pages/statistics.jsx')} />
 

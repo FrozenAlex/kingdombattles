@@ -26,7 +26,7 @@ class SpyingLog extends React.Component {
 			warning: ''
 		};
 
-		this.sendRequest('/profilerequest', {username: this.props.username});
+		this.sendRequest('/api/game/profile', {username: this.props.username});
 	}
 
 	componentDidMount() {

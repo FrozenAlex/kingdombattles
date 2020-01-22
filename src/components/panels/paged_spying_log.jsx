@@ -13,7 +13,7 @@ class PagedSpyingLog extends React.Component {
 		};
 
 		if (props.getFetch) {
-			props.getFetch(() => this.sendRequest('/spylogrequest', {start: props.start, length: props.length}));
+			props.getFetch(() => this.sendRequest('/api/game/spy/log', {start: props.start, length: props.length}));
 		}
 	}
 

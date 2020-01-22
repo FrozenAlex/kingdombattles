@@ -3,23 +3,29 @@ require('dotenv').config();
 
 //libraries
 let express = require('express');
+let expressSession = require('express-session')
 let app = express();
 let http = require('http').Server(app);
 let bodyParser = require('body-parser');
 let path = require('path');
 
+let pool = require("./db/pool");
+
+// expressSession()
+
 //utilities
 let { log } = require('../common/utilities.js');
 let { replacement, stringReplacement } = require('../common/replacement.js');
 
+// Temporary stuff
+app.use('/content/', express.static(path.resolve(__dirname + '/../public/content/')) );
+app.use('/', express.static(path.resolve(__dirname + '/../dist/')) );
+
 app.use(bodyParser.json());
 
 //handle the news request
-let news = require('./news.js');
-app.get('/newsrequest', news.newsRequest());
-app.post('/newsrequest', news.newsRequest());
-app.get('/newsheadersrequest', news.newsHeadersRequest());
-app.post('/newsheadersrequest', news.newsHeadersRequest());
+let news = require('./news/news.js');
+app.use('/api/news', news);
 
 //database
 let { connectToDatabase } = require('./database.js');
@@ -30,61 +36,51 @@ let diagnostics = require('./diagnostics.js');
 diagnostics.runDailyDiagnostics(connection);
 
 //game statistics
-let statistics = require('./statistics.js');
-app.post('/statisticsrequest', statistics.statisticsRequest(connection));
+let statistics = require('./game/statistics.js');
+app.post('/api/game/stats/', statistics.statisticsRequest);
 
 //handle accounts
-let accounts = require('./accounts.js');
-app.post('/signuprequest', accounts.signupRequest(connection));
-app.get('/verifyrequest', accounts.verifyRequest(connection));
-app.post('/loginrequest', accounts.loginRequest(connection));
-app.post('/logoutrequest', accounts.logoutRequest(connection));
-app.post('/passwordchangerequest', accounts.passwordChangeRequest(connection));
-app.post('/passwordrecoverrequest', accounts.passwordRecoverRequest(connection));
-app.post('/passwordresetrequest', accounts.passwordResetRequest(connection));
-app.post('/privacysettingsrequest', accounts.privacySettingsRequest(connection));
-app.post('/privacysettingsupdaterequest', accounts.privacySettingsUpdateRequest(connection));
+let accounts = require('./account/accounts.js');
+app.use("/api/account", accounts)
 
 //handle profiles
-let profiles = require('./profiles.js');
-app.post('/profilerequest', profiles.profileRequest(connection));
-app.post('/recruitrequest', profiles.recruitRequest(connection));
-app.post('/trainrequest', profiles.trainRequest(connection));
-app.post('/untrainrequest', profiles.untrainRequest(connection));
-app.post('/ladderrequest', profiles.ladderRequest(connection));
-profiles.runGoldTick(connection);
-profiles.runLadderTick(connection);
+let profiles = require('./game/profile/index.js');
+app.use('/api/game/profile', profiles);
 
-let combat = require('./combat.js');
-app.post('/attackrequest', combat.attackRequest(connection));
-app.post('/attackstatusrequest', combat.attackStatusRequest(connection));
-app.post('/combatlogrequest', combat.combatLogRequest(connection));
+// Run gold tick
+require('./game/profile/goldtick').runGoldTick();
+// Run the ladder tick
+require('./game/profile/ladder').runLadderTick();
+
+let combat = require('./game/combat.js');
+app.post('/api/game/attack', combat.attackRequest);
+app.post('/api/game/attackstatus', combat.attackStatusRequest);
+app.post('/api/game/combatlog', combat.combatLogRequest);
 combat.runCombatTick(connection);
 
-let spying = require('./spying.js');
-app.post('/spyrequest', spying.spyRequest(connection));
-app.post('/spystatusrequest', spying.spyStatusRequest(connection));
-app.post('/spylogrequest', spying.spyLogRequest(connection));
+let spying = require('./game/spying.js');
+app.post('/api/game/spy/', spying.spyRequest(connection));
+app.post('/api/game/spy/status', spying.spyStatusRequest(connection));
+app.post('/api/game/spy/log', spying.spyLogRequest(connection));
 spying.runSpyTick(connection);
 
-let equipment = require('./equipment.js');
-app.post('/equipmentrequest', equipment.equipmentRequest(connection));
-app.post('/equipmentpurchaserequest', equipment.purchaseRequest(connection));
-app.post('/equipmentsellrequest', equipment.sellRequest(connection));
+let equipment = require('./game/equipment.js');
+app.post('/api/game/equipment/', equipment.equipmentRequest(connection));
+app.post('/api/game/equipment/purchase', equipment.purchaseRequest(connection));
+app.post('/api/game/equipment/sell', equipment.sellRequest(connection));
 
-let badges = require('./badges.js');
-app.post('/badgeslistrequest', badges.listRequest(connection));
-app.post('/badgesownedrequest', badges.ownedRequest(connection));
-app.post('/badgeselectactiverequest', badges.selectActiveBadge(connection));
+let badges = require('./game/badges.js');
+app.post('/api/game/badges/owned', badges.ownedRequest);
+app.post('/api/game/badges/active', badges.selectActiveBadge);
 badges.runBadgeTicks(connection);
 
 //a bit of fun
 const taglineEngine = replacement(require('./taglines.json'));
-app.get('/taglinerequest', (req, res) => {
+app.get('/api/tagline', (req, res) => {
 	res.send(taglineEngine('tagline'));
 });
 
-app.post('/easteregg', (req, res) => {
+app.post('/api/easteregg', (req, res) => {
 	if (req.body.query === 'search') {
 		res.status(200).send('You found it!');
 	} else {
@@ -92,32 +88,15 @@ app.post('/easteregg', (req, res) => {
 	}
 });
 
-//static directories
-app.use('/content', express.static(path.resolve(__dirname + '/../public/content')) );
-app.use('/img', express.static(path.resolve(__dirname + '/../public/img')) );
-app.use('/styles', express.static(path.resolve(__dirname + '/../public/styles')) );
 
-//ads
-app.get('/ads.txt', (req, res) => {
-	res.sendFile(path.resolve(__dirname + `/../public/${req.originalUrl}`));
-});
-
-//the app file(s)
-app.get('/*app.bundle.js', (req, res) => {
-	res.sendFile(path.resolve(`${__dirname}/../public/${req.originalUrl.split('/').pop()}`));
-});
-
-//source map (for development)
-app.get('/app.bundle.js.map', (req, res) => {
-	res.sendFile(path.resolve(__dirname + `/../public/${req.originalUrl}`));
-});
 
 //fallback to index.html
 app.get('*', (req, res) => {
-	res.sendFile(path.resolve(__dirname + '/../public/index.html'));
+	res.sendFile(path.resolve(__dirname + '/../dist/index.html'));
 });
 
 //startup
-http.listen(4000, () => {
-	log('listening to *:4000');
+http.listen(process.env.PORT  || 3000, () => {
+	log(`listening to *:${process.env.PORT}`);
 });
+

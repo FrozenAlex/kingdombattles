@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS diagnosticsEvents (
 CREATE TABLE IF NOT EXISTS signups (
 	email VARCHAR(320) UNIQUE,
 	username VARCHAR(100) UNIQUE,
-	salt VARCHAR(50),
 	hash VARCHAR(100),
 	promotions BOOLEAN DEFAULT FALSE,
 
@@ -36,7 +35,6 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 	email VARCHAR(320) UNIQUE,
 	username VARCHAR(100) UNIQUE,
-	salt VARCHAR(50),
 	hash VARCHAR(100),
 	promotions BOOLEAN DEFAULT FALSE,
 

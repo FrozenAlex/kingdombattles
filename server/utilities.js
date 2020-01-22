@@ -1,17 +1,21 @@
 //environment variables
 require('dotenv').config();
 
-//utilities
-let { log } = require('../common/utilities.js');
+const pool = require("./db/pool.js")
 
-const getEquipmentStatistics = (cb) => {
+//utilities
+let {
+	log
+} = require('../common/utilities.js');
+
+const getEquipmentStatistics = () => {
 	//TODO: apiVisible field
-	return cb(undefined, { 'statistics': require('./equipment_statistics.json') });
+	return require('./data/equipment_statistics.json')
 };
 
-const getEquipmentOwned = (connection, id, cb) => {
+const getEquipmentOwned = async (id) => {
 	let query = 'SELECT name, quantity FROM equipment WHERE accountId = ?;';
-	connection.query(query, [id], (err, results) => {
+	pool.query(query, [id], (err, results) => {
 		if (err) throw err;
 
 		let ret = {};
@@ -23,112 +27,123 @@ const getEquipmentOwned = (connection, id, cb) => {
 			ret[results[key].name] = results[key].quantity;
 		});
 
-		return cb(undefined, { 'owned': ret });
+		return {
+			'owned': ret
+		};
 	});
 };
 
-const getBadgesStatistics = (cb) => {
+const getBadgesStatistics = () => {
 	//TODO: apiVisible field
-	return cb(undefined, { 'statistics': require('./badge_statistics.json') });
+	return {
+		'statistics': require('./data/badge_statistics.json')
+	};
 };
 
-const getBadgesOwned = (connection, id, cb) => {
-	let query = 'SELECT name, active FROM badges WHERE accountId = ?;';
-	connection.query(query, [id], (err, results) => {
-		if (err) throw err;
+const getBadgesOwned = async (id) => {
+	// Get badges
+	let badges = (await pool.promise().query('SELECT name, active FROM badges WHERE accountId = ?;', [id]))[0]
+	let ret = {}; //names, active
 
-		let ret = {}; //names, active
-
-		Object.keys(results).map((key) => {
-			if (ret[results[key].name] !== undefined) {
-				log('WARNING: Invalid database state, badges owned', id, JSON.stringify(results));
-			}
-			ret[results[key].name] = { active: results[key].active };
-		});
-
-		//NOTE: check for "Capture The Flag" badge, force it to be the active badge
-		if ("Capture The Flag" in ret) {
-			Object.keys(ret).map((key) => ret[key].active = false);
-			ret["Capture The Flag"].active = true;
+	Object.keys(badges).map((key) => {
+		if (ret[results[key].name] !== undefined) {
+			log('WARNING: Invalid database state, badges owned', id, JSON.stringify(results));
 		}
-
-		return cb(undefined, { 'owned': ret });
+		ret[results[key].name] = {
+			active: results[key].active
+		};
 	});
+
+	//NOTE: check for "Capture The Flag" badge, force it to be the active badge
+	if ("Capture The Flag" in ret) {
+		Object.keys(ret).map((key) => ret[key].active = false);
+		ret["Capture The Flag"].active = true;
+	}
+
+	return ret;
 }
 
 const isNormalInteger = (str) => {
-    let n = Math.floor(Number(str));
-    return n !== Infinity && String(n) == str && n >= 0;
+	let n = Math.floor(Number(str));
+	return n !== Infinity && String(n) == str && n >= 0;
 };
 
-const isAttacking = (connection, user, cb) => {
+const isAttacking = async (user) => {
 	let query;
 
 	if (isNormalInteger(user)) {
 		query = 'SELECT * FROM pendingCombat WHERE attackerId = ?;';
-	} else if (typeof(user) === 'string') {
+	} else if (typeof (user) === 'string') {
 		query = 'SELECT * FROM pendingCombat WHERE attackerId IN (SELECT id FROM accounts WHERE username = ?);';
 	} else {
-		return cb(`isAttacking: Unknown argument type for user: ${typeof(user)}`);
+		throw TypeError(`isAttacking: Unknown argument type for user: ${typeof(user)}`);
 	}
 
-	connection.query(query, [user], (err, results) => {
-		if (err) throw err;
-
-		if (results.length === 0) {
-			return cb(undefined, false);
-		} else {
-			//get the username of the person being attacked
-			let query = 'SELECT username FROM accounts WHERE id = ?;';
-			connection.query(query, [results[0].defenderId], (err, results) => {
-				if (err) throw err;
-				return cb(undefined, true, results[0].username);
-			});
-		}
-	});
+	let results = await pool.promise().query(query, [user], (err, results))[0];
+	if (results.length === 0) {
+		// Don't return anything
+		return null
+	} else {
+		//get the username of the person being attacked
+		let query = 'SELECT username FROM accounts WHERE id = ?;';
+		let results = await pool.promise().query(query, [results[0].defenderId])[0]
+		return results[0].username;
+	}
 };
 
-const isSpying = (connection, user, cb) => {
+/**
+ * Checks if the user is currently spying
+ * @param {number|string} user Username or account ID 
+ */
+const isSpying = async (user) => {
 	let query;
 
+	// Check type of the passed value
 	if (isNormalInteger(user)) {
 		query = 'SELECT * FROM pendingSpying WHERE attackerId = ?;';
-	} else if (typeof(user) === 'string') {
+	} else if (typeof (user) === 'string') {
 		query = 'SELECT * FROM pendingSpying WHERE attackerId IN (SELECT id FROM accounts WHERE username = ?);';
 	} else {
-		return cb(`isSpying: Unknown argument type for user: ${typeof(user)}`);
+		throw TypeError(`isSpying: Unknown argument type for user: ${typeof(user)}`);
 	}
 
-	connection.query(query, [user], (err, results) => {
-		if (err) throw err;
+	let results = (await pool.promise().query(query, [user]))[0];
 
-		if (results.length === 0) {
-			return cb(undefined, false);
-		} else {
-			//get the username of the person being spied on
-			let query = 'SELECT username FROM accounts WHERE id = ?;';
-			connection.query(query, [results[0].defenderId], (err, results) => {
-				if (err) throw err;
-				return cb(undefined, true, results[0].username);
-			});
-		}
-	});
+	if (results.length === 0) {
+		return false;
+	} else {
+		//get the username of the person being spied on
+
+		let spyingVictim = (await pool.promise().query(
+			'SELECT username FROM accounts WHERE id = ?;',
+			[results[0].defenderId]))[0];
+		return spyingVictim[0].username;
+	}
 };
 
-const getLadderData = (connection, field, start, length, cb) => {
+/**
+ * Get account ranking
+ * @param {*} field 
+ * @param {*} start 
+ * @param {*} length 
+ */
+const getLadderData = async (field, start, length) => {
 	//moved here for reusability
 	//TODO: implement the field parameter
-	let query = 'SELECT accounts.id AS id, username, soldiers, recruits, gold FROM accounts JOIN profiles ON accounts.id = profiles.accountId ORDER BY -ladderRank DESC LIMIT ?, ?;';
-	connection.query(query, [Math.max(0, start || 0), Math.max(0, length || 0)], (err, results) => {
-		cb(err, results);
-	});
+
+	let results = (await pool.promise().query(
+		'SELECT accounts.id AS id, username, soldiers, recruits, gold FROM accounts JOIN profiles ON accounts.id = profiles.accountId ORDER BY -ladderRank DESC LIMIT ?, ?;',
+		[Math.max(0, start || 0), Math.max(0, length || 0)]))[0]
+	return results;
 };
 
-const logActivity = (connection, id) => {
-	let query = 'UPDATE accounts SET lastActivityTime = CURRENT_TIMESTAMP() WHERE id = ?;';
-	connection.query(query, [id], (err) => {
-		if (err) throw err;
-	});
+/**
+ * Updates accounts last activity time
+ * @param {number} id Account ID
+ */
+const logActivity = (id) => {
+	// Don
+	pool.promise().query('UPDATE accounts SET lastActivityTime = CURRENT_TIMESTAMP() WHERE id = ?;', [id])
 };
 
 module.exports = {

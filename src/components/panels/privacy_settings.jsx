@@ -9,13 +9,13 @@ class Signup extends React.Component {
 			promotions: false
 		};
 
-		this.sendRequest('/privacysettingsrequest');
+		this.sendRequest('/api/account/privacysettings');
 	}
 
 	render() {
 		return (
 			<div className='panel'>
-				<form className='table noCollapse' action='/privacysettingsupdaterequest' method='post' onSubmit={this.submit.bind(this)}>
+				<form className='table noCollapse' action='/api/account/privacy' method='post' onSubmit={this.submit.bind(this)}>
 					<hr />
 					<div className='break' />
 

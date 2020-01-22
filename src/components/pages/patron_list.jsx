@@ -32,7 +32,7 @@ class PatronList extends React.Component {
 
 						<h1 className='centered'>My Patrons On Patreon</h1>
 						<p className='centered'>You can become a patron <a href='https://www.patreon.com/krgamestudios'>here</a>.</p>
-						<Markdown url='/content/patron_list.md' setWarning={this.setWarning.bind(this)} />
+						<Markdown url={require('../../assets/content/patron_list.md').default} setWarning={this.setWarning.bind(this)} />
 					</div>
 				</div>
 			</div>

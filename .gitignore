@@ -15,3 +15,7 @@ auth.json
 #output files
 *.bundle.js
 *.js.map
+
+# Yarn and bundles
+yarn.lock
+dist/

@@ -14,7 +14,7 @@ class PagedCombatLog extends React.Component {
 		};
 
 		if (props.getFetch) {
-			props.getFetch(() => this.sendRequest('/combatlogrequest', {start: props.start, length: props.length}));
+			props.getFetch(() => this.sendRequest('/api/game/combatlog', {start: props.start, length: props.length}));
 		}
 	}
 

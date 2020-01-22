@@ -2,9 +2,9 @@
 require('dotenv').config();
 
 //utilities
-let { log } = require('../common/utilities.js');
+let { log } = require('../../common/utilities.js');
 
-let { getEquipmentStatistics, getEquipmentOwned, isAttacking, isSpying, logActivity } = require('./utilities.js');
+let { getEquipmentStatistics, getEquipmentOwned, isAttacking, isSpying, logActivity } = require('./../utilities.js');
 
 const equipmentRequest = (connection) => (req, res) => {
 	//validate the credentials
@@ -180,7 +180,7 @@ const purchaseRequest = (connection) => (req, res) => {
 
 										log('Purchase made', req.body.id, req.body.token, req.body.type, req.body.name);
 
-										logActivity(connection, req.body.id);
+										logActivity(req.body.id);
 									});
 								});
 							});
@@ -280,7 +280,7 @@ const sellRequest = (connection) => (req, res) => {
 
 										log('Cleaned database', 'equipment sale');
 
-										logActivity(connection, req.body.id);
+										logActivity(req.body.id);
 									});
 								});
 							});

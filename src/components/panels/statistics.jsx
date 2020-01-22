@@ -10,7 +10,7 @@ class Statistics extends React.Component {
 		};
 
 		if (props.getFetch) {
-			props.getFetch(() => this.sendRequest('/statisticsrequest'));
+			props.getFetch(() => this.sendRequest('/api/game/stats/'));
 		}
 	}
 

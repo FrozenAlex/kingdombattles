@@ -4,21 +4,34 @@ require('dotenv').config();
 //libraries
 let CronJob = require('cron').CronJob;
 
-let { getBadgesStatistics, getBadgesOwned, isAttacking, isSpying, getLadderData, logActivity } = require('./utilities.js');
+let {
+	getBadgesStatistics,
+	getBadgesOwned,
+	isAttacking,
+	isSpying,
+	getLadderData,
+	logActivity
+} = require('./utilities.js');
 
 //utilities
-let { logDiagnostics } = require('./diagnostics.js');
-let { log } = require('../common/utilities.js');
+let {
+	logDiagnostics
+} = require('./diagnostics.js');
+let {
+	log
+} = require('../common/utilities.js');
+let pool = require('./db/pool.js')
 
 //profile creation & requesting
 const profileCreateRequest = (connection) => (req, res) => {
 	//separate this section so it can be used elsewhere too
-	return profileCreateRequestInner(connection, req, res, req.body);
+	return profileCreateRequestInner(req, res);
 };
 
-function profileCreateRequestInner(connection, req, res, body) {
+function profileCreateRequestInner(req, res) {
+	let body = req.body;
 	let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT accounts.id FROM accounts WHERE username = ?);';
-	connection.query(query, [body.username], (err, results) => {
+	pool.query(query, [body.username], (err, results) => {
 		if (err) throw err;
 
 		if (results.length === 1) {
@@ -29,7 +42,7 @@ function profileCreateRequestInner(connection, req, res, body) {
 
 		//check ID, username and token match (only the profile's owner can create it)
 		let query = 'SELECT accountId FROM sessions WHERE accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;';
-		connection.query(query, [body.username, body.token], (err, results) => {
+		pool.query(query, [body.username, body.token], (err, results) => {
 			if (err) throw err;
 
 			if (results.length !== 1 || results[0].accountId != body.id) {
@@ -40,74 +53,67 @@ function profileCreateRequestInner(connection, req, res, body) {
 
 			//create the profile
 			let query = 'INSERT INTO profiles (accountId) SELECT accounts.id FROM accounts WHERE username = ?;';
-			connection.query(query, [body.username], (err) => {
+			pool.query(query, [body.username], (err) => {
 				if (err) throw err;
 
 				log('Profile created', body.username, body.id, body.token);
-				logActivity(connection, body.id);
+				logActivity(body.id);
 
-				return profileRequestInner(connection, req, res, body);
+				return profileRequestInner(req, res);
 			});
 		});
 	});
 };
 
-const profileRequest = (connection) => (req, res) => {
+const profileRequest = (req, res) => {
 	//separate this section so it can be used elsewhere too
-	return profileRequestInner(connection, req, res, req.body);
+	return profileRequestInner(req, res);
 };
 
-function profileRequestInner(connection, req, res, body) {
+async function profileRequestInner(req, res) {
+	let body = req.body;
 	//find the profile
-	let query = 'SELECT * FROM profiles WHERE accountId IN (SELECT accounts.id FROM accounts WHERE username = ?);';
-	connection.query(query, [body.username], (err, results) => {
-		if (err) throw err;
+	let profiles = (await pool.promise().query('SELECT * FROM profiles WHERE accountId IN (SELECT accounts.id FROM accounts WHERE username = ?);', [body.username]))[0]
 
-		if (results.length !== 1) {
-			//pass it off to the profile creation process, IF the user is requesting their own profile
-			let query = 'SELECT id FROM accounts WHERE id = ? AND id IN (SELECT accountId FROM sessions WHERE token = ?);';
-			connection.query(query, [body.id, body.token], (err, results) => {
-				if (err) throw err;
+	if (profiles.length !== 1) {
+		//pass it off to the profile creation process, IF the user is requesting their own profile
+		let results = (await pool.promise().query('SELECT id FROM accounts WHERE id = ? AND id IN (SELECT accountId FROM sessions WHERE token = ?);', [body.id, body.token]))[0]
 
-				if (results.length === 1) {
-					return profileCreateRequestInner(connection, req, res, body);
-				} else {
-					res.status(400).write(log('Profile not found', body.username, body.id, body.token));
-					res.end();
-				}
-			});
+		if (results.length === 1) {
+			return profileCreateRequestInner(req, res);
 		} else {
-			getBadgesOwned(connection, results[0].accountId, (err, { owned }) => {
-				if (err) throw err;
-
-				getBadgesStatistics((err, { statistics }) => {
-					if (err) throw err;
-
-					let activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
-
-					res.status(200).json({
-						username: body.username,
-						gold: results[0].gold,
-						recruits: results[0].recruits,
-						soldiers: results[0].soldiers,
-						spies: results[0].spies,
-						scientists: results[0].scientists,
-						activeBadge: activeBadge,
-						activeBadgeFilename: activeBadge ? statistics[activeBadge].filename : null
-					});
-					res.end();
-					log('Profile sent', body.username, body.id, body.token);
-				});
-			});
+			res.status(400).write(log('Profile not found', body.username, body.id, body.token));
+			res.end();
 		}
-	});
+
+	} else {
+		let userProfile = profiles[0];
+
+		// Get owned badges
+		let owndedBadges = await getBadgesOwned(userProfile.accountId)
+
+		// Active badges
+		let activeBadge = Object.keys(owndedBadges).find(name => owndedBadges[name].active) || null;
+
+		res.status(200).json({
+			username: body.username,
+			gold: userProfile.gold,
+			recruits: userProfile.recruits,
+			soldiers: userProfile.soldiers,
+			spies: userProfile.spies,
+			scientists: userProfile.scientists,
+			activeBadge: activeBadge,
+		});
+		res.end();
+		log('Profile sent', body.username, body.id, body.token);
+	}
 };
 
 //actual actions to be taken
-const recruitRequest = (connection) => (req, res) => {
+const recruitRequest = (req, res) => {
 	//verify the credentials
 	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	connection.query(query, [req.body.id, req.body.token], (err, results) => {
+	pool.query(query, [req.body.id, req.body.token], (err, results) => {
 		if (err) throw err;
 
 		if (results[0].total !== 1) {
@@ -118,7 +124,7 @@ const recruitRequest = (connection) => (req, res) => {
 
 		//verify enough time has passed since the last successful recruit action
 		let query = 'SELECT TIMESTAMPDIFF(HOUR, (SELECT lastRecruitTime FROM profiles WHERE accountId = ?), CURRENT_TIMESTAMP());';
-		connection.query(query, [req.body.id], (err, results) => {
+		pool.query(query, [req.body.id], (err, results) => {
 			if (err) throw err;
 
 			if (results.length !== 1) {
@@ -138,25 +144,29 @@ const recruitRequest = (connection) => (req, res) => {
 
 			//update the profile with the new data (gaining 1 recruit)
 			let query = 'UPDATE profiles SET recruits = recruits + 1, lastRecruitTime = CURRENT_TIMESTAMP() WHERE accountId	= ?;';
-			connection.query(query, [req.body.id], (err) => {
+			pool.query(query, [req.body.id], (err) => {
 				if (err) throw err;
 
 				//send the new profile data as JSON
 				let query = 'SELECT username, profiles.* FROM profiles JOIN accounts ON accounts.id = profiles.accountId WHERE accounts.id = ?;';
-				connection.query(query, [req.body.id], (err, results) => {
+				pool.query(query, [req.body.id], (err, results) => {
 					if (err) throw err;
 
-						//check just in case
+					//check just in case
 					if (results.length !== 1) {
 						res.status(400).write(log('Invalid recruit credentials - 2', req.body.id, req.body.token));
 						res.end();
 						return;
 					}
 
-					getBadgesOwned(connection, results[0].accountId, (err, { owned }) => {
+					getBadgesOwned(connection, results[0].accountId, (err, {
+						owned
+					}) => {
 						if (err) throw err;
 
-						getBadgesStatistics((err, { statistics }) => {
+						getBadgesStatistics((err, {
+							statistics
+						}) => {
 							if (err) throw err;
 
 							let activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
@@ -175,7 +185,7 @@ const recruitRequest = (connection) => (req, res) => {
 
 							log('Recruit successful', results[0].username, req.body.id, req.body.token);
 							logDiagnostics(connection, 'recruit', 1);
-							logActivity(connection, req.body.id);
+							logActivity(req.body.id);
 						});
 					});
 				});
@@ -184,10 +194,10 @@ const recruitRequest = (connection) => (req, res) => {
 	});
 };
 
-const trainRequest = (connection) => (req, res) => {
+const trainRequest = (req, res) => {
 	//verify the credentials (NOTE: duplication)
 	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	connection.query(query, [req.body.id, req.body.token], (err, results) => {
+	pool.query(query, [req.body.id, req.body.token], (err, results) => {
 		if (err) throw err;
 
 		if (results[0].total !== 1) {
@@ -224,7 +234,7 @@ const trainRequest = (connection) => (req, res) => {
 
 				//determine the cost of the training TODO: make these global for the client too
 				let cost = 0;
-				switch(req.body.role) {
+				switch (req.body.role) {
 					case 'soldier':
 						cost = 100;
 						break;
@@ -240,7 +250,7 @@ const trainRequest = (connection) => (req, res) => {
 
 				//verify that the user has a high enough gold and recruit balance
 				let query = 'SELECT recruits, gold FROM profiles WHERE accountId = ?;';
-				connection.query(query, [req.body.id], (err, results) => {
+				pool.query(query, [req.body.id], (err, results) => {
 					if (err) throw err;
 
 					if (results[0].recruits <= 0) {
@@ -257,12 +267,12 @@ const trainRequest = (connection) => (req, res) => {
 
 					//update the profile with new values (NOTE: extra protection for network latency)
 					let query = 'UPDATE profiles SET gold = gold - ?, recruits = recruits - 1, soldiers = soldiers + ?, spies = spies + ?, scientists = scientists + ? WHERE accountId = ? AND gold >= ? AND recruits > 0;';
-					connection.query(query, [cost, req.body.role === 'soldier' ? 1 : 0, req.body.role === 'spy' ? 1 : 0, req.body.role === 'scientist' ? 1 : 0, req.body.id, cost], (err) => {
+					pool.query(query, [cost, req.body.role === 'soldier' ? 1 : 0, req.body.role === 'spy' ? 1 : 0, req.body.role === 'scientist' ? 1 : 0, req.body.id, cost], (err) => {
 						if (err) throw err;
 
 						//send the new profile data as JSON (NOTE: possible duplication)
 						let query = 'SELECT username, profiles.* FROM profiles JOIN accounts ON accounts.id = profiles.accountId WHERE accounts.id = ?;';
-						connection.query(query, [req.body.id], (err, results) => {
+						pool.query(query, [req.body.id], (err, results) => {
 							if (err) throw err;
 
 							//check just in case
@@ -272,10 +282,14 @@ const trainRequest = (connection) => (req, res) => {
 								return;
 							}
 
-							getBadgesOwned(connection, results[0].accountId, (err, { owned }) => {
+							getBadgesOwned(connection, results[0].accountId, (err, {
+								owned
+							}) => {
 								if (err) throw err;
 
-								getBadgesStatistics((err, { statistics }) => {
+								getBadgesStatistics((err, {
+									statistics
+								}) => {
 									if (err) throw err;
 
 									let activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
@@ -293,7 +307,7 @@ const trainRequest = (connection) => (req, res) => {
 									res.end();
 
 									log('Train executed', results[0].username, req.body.role, req.body.id, req.body.token);
-									logActivity(connection, req.body.id);
+									logActivity(req.body.id);
 								});
 							});
 						});
@@ -304,10 +318,10 @@ const trainRequest = (connection) => (req, res) => {
 	});
 };
 
-const untrainRequest = (connection) => (req, res) => {
+const untrainRequest = (req, res) => {
 	//verify the credentials (NOTE: duplication)
 	let query = 'SELECT accountId FROM sessions WHERE accountId = ? AND token = ?;';
-	connection.query(query, [req.body.id, req.body.token], (err, results) => {
+	pool.query(query, [req.body.id, req.body.token], (err, results) => {
 		if (err) throw err;
 
 		if (results.length !== 1) {
@@ -326,7 +340,7 @@ const untrainRequest = (connection) => (req, res) => {
 		//can't untrain while attacking
 		isAttacking(connection, req.body.id, (err, attacking) => {
 			if (err) throw err;
-			
+
 			if (attacking) {
 				res.status(400).write(log('Can\'t untrain while attacking', req.body.id, req.body.token));
 				res.end();
@@ -344,7 +358,7 @@ const untrainRequest = (connection) => (req, res) => {
 
 				//verify that the user has a high enough balance
 				let query = 'SELECT soldiers, spies, scientists FROM profiles WHERE accountId = ?;';
-				connection.query(query, [req.body.id], (err, results) => {
+				pool.query(query, [req.body.id], (err, results) => {
 					if (err) throw err;
 
 					if (req.body.role === 'soldier' && results[0].soldiers <= 0) {
@@ -382,12 +396,12 @@ const untrainRequest = (connection) => (req, res) => {
 
 					//update the profile with new values (NOTE: extra protection for network latency)
 					let query = `UPDATE profiles SET recruits = recruits + 1, soldiers = soldiers - ?, spies = spies - ?, scientists = scientists - ? WHERE accountId = ? AND ${roleName} > 0;`;
-					connection.query(query, [roleName === 'soldiers' ? 1 : 0, roleName === 'spies' ? 1 : 0, roleName === 'scientists' ? 1 : 0, req.body.id], (err) => {
+					pool.query(query, [roleName === 'soldiers' ? 1 : 0, roleName === 'spies' ? 1 : 0, roleName === 'scientists' ? 1 : 0, req.body.id], (err) => {
 						if (err) throw err;
 
 						//send the new profile data as JSON (NOTE: possible duplication)
 						let query = 'SELECT username, profiles.* FROM profiles JOIN accounts ON accounts.id = profiles.accountId WHERE accounts.id = ?;';
-						connection.query(query, [req.body.id], (err, results) => {
+						pool.query(query, [req.body.id], (err, results) => {
 							if (err) throw err;
 
 							//check just in case
@@ -397,10 +411,14 @@ const untrainRequest = (connection) => (req, res) => {
 								return;
 							}
 
-							getBadgesOwned(connection, results[0].accountId, (err, { owned }) => {
+							getBadgesOwned(connection, results[0].accountId, (err, {
+								owned
+							}) => {
 								if (err) throw err;
 
-								getBadgesStatistics((err, { statistics }) => {
+								getBadgesStatistics((err, {
+									statistics
+								}) => {
 									if (err) throw err;
 
 									let activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
@@ -418,7 +436,7 @@ const untrainRequest = (connection) => (req, res) => {
 									res.end();
 
 									log('Untrain executed', results[0].username, roleName, req.body.id, req.body.token);
-									logActivity(connection, req.body.id);
+									logActivity(req.body.id);
 								});
 							});
 						});
@@ -429,11 +447,13 @@ const untrainRequest = (connection) => (req, res) => {
 	});
 };
 
-const ladderRequest = (connection) => (req, res) => {
-	getLadderData(connection, 'ladderRank', req.body.start, req.body.length, (err, results) => {
+const ladderRequest = (req, res) => {
+	getLadderData('ladderRank', req.body.start, req.body.length, (err, results) => {
 		if (err) throw err;
 
-		getBadgesStatistics((err, { statistics }) => {
+		getBadgesStatistics((err, {
+			statistics
+		}) => {
 			if (err) throw err;
 
 			//BUGFIX
@@ -442,8 +462,10 @@ const ladderRequest = (connection) => (req, res) => {
 				res.end();
 			}
 
-			for(let i = 0; i < results.length; i++) {
-				getBadgesOwned(connection, results[i].id, (err, { owned }) => {
+			for (let i = 0; i < results.length; i++) {
+				getBadgesOwned(connection, results[i].id, (err, {
+					owned
+				}) => {
 					if (err) throw err;
 
 					results[i].activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
@@ -464,7 +486,7 @@ const ladderRequest = (connection) => (req, res) => {
 	});
 };
 
-const runGoldTick = (connection) => {
+const runGoldTick  = function () {
 	//gotta love closures
 	let goldTickJob;
 	let oldTickRate;
@@ -474,7 +496,7 @@ const runGoldTick = (connection) => {
 		log('outerTick');
 
 		let query = 'SELECT SUM(gold) / COUNT(*) AS goldAverage FROM profiles;';
-		connection.query(query, (err, results) => {
+		pool.query(query, (err, results) => {
 			if (err) throw err;
 
 			//TODO: automatic "drain mode"
@@ -499,12 +521,12 @@ const runGoldTick = (connection) => {
 					} else {
 						query = 'UPDATE profiles SET gold = gold + recruits WHERE gold < 100;';
 					}
-					connection.query(query, (err) => {
+					pool.query(query, (err) => {
 						if (err) throw err;
 
 						//re-fetch the new gold average for logging
 						let query = 'SELECT SUM(gold) / COUNT(*) AS goldAverage FROM profiles;';
-						connection.query(query, (err, results) => {
+						pool.query(query, (err, results) => {
 							if (err) throw err;
 							log('goldTickJob', tickRate, results[0].goldAverage);
 						});
@@ -521,38 +543,15 @@ const runGoldTick = (connection) => {
 	outerTick.start();
 };
 
-const runLadderTick = (connection) => {
-	let ladderTickJob = new CronJob('0 * * * * *', () => {
-		//set the ladder rank weight
-		let query = 'UPDATE profiles SET ladderRankWeight = (soldiers * 5 + (recruits + scientists + spies) + (SELECT COUNT(*) FROM pastCombat WHERE (attackerId = accountId AND victor = "attacker" AND attackingUnits <= IF(undefended, defendingUnits * 0.25, defendingUnits)) OR (defenderId = accountId AND victor = "defender")) / 10 + gold / 10);';
-		connection.query(query, (err) => {
-			if (err) throw err;
 
-			//get the profiles ordered by weight descending
-			let query = 'SELECT id FROM profiles ORDER BY ladderRankWeight DESC, soldiers DESC, recruits DESC, gold DESC;';
-			connection.query(query, (err, results) => {
-				if (err) throw err;
-
-				let query = `INSERT INTO profiles (id, ladderRank) VALUES ${ results.map((record, index) => `(${record.id}, ${index})` ) } ON DUPLICATE KEY UPDATE id = VALUES(id), ladderRank = VALUES(ladderRank);`;
-				connection.query(query, (err) => {
-					if (err) throw err;
-
-					log('runLadderTick completed');
-				});
-			});
-		});
-	});
-
-	ladderTickJob.start();
-};
 
 module.exports = {
-//	profileCreate: profileCreate, //NOTE: Not actually used
+	//	profileCreate: profileCreate, //NOTE: Not actually used
 	profileRequest: profileRequest,
 	recruitRequest: recruitRequest,
 	trainRequest: trainRequest,
 	untrainRequest: untrainRequest,
 	ladderRequest: ladderRequest,
 	runGoldTick: runGoldTick,
-	runLadderTick: runLadderTick
+	// runLadderTick: runLadderTick
 };

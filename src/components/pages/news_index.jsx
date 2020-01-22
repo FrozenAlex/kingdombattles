@@ -12,7 +12,7 @@ class NewsIndex extends React.Component {
 			warning: '' //TODO: unified warning?
 		};
 
-		this.sendRequest('/newsheadersrequest');
+		this.sendRequest('/api/news/headers');
 	}
 
 	render() {

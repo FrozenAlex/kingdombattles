@@ -29,7 +29,7 @@ class Signup extends React.Component {
 					<p>{this.state.warning}</p>
 				</div>
 
-				<form action='/signuprequest' method='post' onSubmit={this.submit.bind(this)}>
+				<form action='/api/account/signup' method='post' onSubmit={this.submit.bind(this)}>
 					<div>
 						<label htmlFor='email'>Email:</label>
 						<input id='email' type='text' name='email' value={this.state.email} onChange={this.updateEmail.bind(this)} />

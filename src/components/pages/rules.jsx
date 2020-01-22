@@ -30,7 +30,7 @@ class Rules extends React.Component {
 							<p>{this.state.warning}</p>
 						</div>
 
-						<Markdown url='/content/rules.md' setWarning={this.setWarning.bind(this)} />
+						<Markdown url={require('../../assets/content/rules.md').default} setWarning={this.setWarning.bind(this)} />
 					</div>
 				</div>
 			</div>

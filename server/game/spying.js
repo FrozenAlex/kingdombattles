@@ -5,10 +5,10 @@ require('dotenv').config();
 let CronJob = require('cron').CronJob;
 
 //utilities
-let { logDiagnostics } = require('./diagnostics.js');
-let { log } = require('../common/utilities.js');
+let { logDiagnostics } = require('./../diagnostics.js');
+let { log } = require('../../common/utilities.js');
 
-let { getEquipmentStatistics, isSpying, isAttacking, logActivity } = require('./utilities.js');
+let { getEquipmentStatistics, isSpying, isAttacking, logActivity } = require('./../utilities.js');
 
 const spyRequest = (connection) => (req, res) => {
 	//verify the attacker's credentials (only the attacker can launch an attack)
@@ -71,7 +71,7 @@ const spyRequest = (connection) => (req, res) => {
 						});
 						res.end();
 
-						logActivity(connection, req.body.id);
+						logActivity(req.body.id);
 					});
 				});
 			});

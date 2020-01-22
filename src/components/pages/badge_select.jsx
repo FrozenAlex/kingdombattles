@@ -43,7 +43,7 @@ class BadgeSelect extends React.Component {
 						</div>
 
 						<h1 className='centered'>Badge Select</h1>
-						<p className='centered'>Click on your favourite badge! <Link to='/badges/list'>Full list here</Link>.</p>
+						<p className='centered'>Click on your favourite badge! <Link to='/badges/list/'>Full list here</Link>.</p>
 						<BadgeSelectPanel setWarning={this.setWarning.bind(this)} getFetch={ (fn) => this.setState({ fetch: fn }) } />
 					</div>
 				</div>
