@@ -184,7 +184,7 @@ const recruitRequest = (req, res) => {
 							res.end();
 
 							log('Recruit successful', results[0].username, req.body.id, req.body.token);
-							logDiagnostics(connection, 'recruit', 1);
+							logDiagnostics('recruit', 1);
 							logActivity(req.body.id);
 						});
 					});

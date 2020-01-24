@@ -5,7 +5,6 @@ import Loadable from 'react-loadable';
 // Styles 
 import '../styles/index.scss';
 
-import badgesdata from '../assets/badges.js'
 import Footer from './panels/footer.jsx';
 
 //lazy route loading (with error handling)
@@ -54,7 +53,6 @@ export default class App extends React.Component {
 	}
 
 	render() {
-		console.log(badgesdata)
 		return (
 			<div className = 'central'>
 				{/* <GAdverts /> */}
@@ -72,7 +70,7 @@ export default class App extends React.Component {
 						<LazyRoute path='/passwordreset' component={() => import('./pages/password_reset.jsx')} />
 
 						<LazyRoute path='/profile' component={() => import('./pages/profile.jsx')} />
-						<LazyRoute path='/equipment' component={() => import('./pages/equipment.jsx')} />
+						<LazyRoute path='/equipment/' component={() => import('./pages/equipment.jsx')} />
 						<LazyRoute path='/ladder' component={() => import('./pages/ladder.jsx')} />
 						<LazyRoute path='/combatlog' component={() => import('./pages/combat_log.jsx')} />
 						<LazyRoute path='/spyinglog' component={() => import('./pages/spying_log.jsx')} />

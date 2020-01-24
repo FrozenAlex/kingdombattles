@@ -9,7 +9,7 @@ let firstline = require('firstline');
 var express = require('express')
 var router = express.Router();
 
-let BaseDir = path.join(__dirname, '..', '..', 'public','content','news');
+let BaseDir = path.join(__dirname, '..', '..','content','news');
 
 let { log } = require('../../common/utilities.js');
 
@@ -17,8 +17,8 @@ router.get('/', newsRequest);
 router.post('/', newsRequest);
 router.get('/headers', newsHeadersRequest);
 router.post('/headers', newsHeadersRequest);
-router.post('/tag/', newsHeadersRequest);
-router.post('/article/:article', newsHeadersRequest);
+// router.post('/tag/', newsHeadersRequest);
+// router.post('/article/:article', newsHeadersRequest);
 
 async function newsRequest(req, res) {
 	let fileNames = fs.readdirSync(BaseDir);

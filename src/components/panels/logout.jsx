@@ -22,14 +22,8 @@ class Logout extends React.Component {
 	sendRequest(url, args = {}) { //send a unified request, using my credentials
 		//build the XHR
 		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			id: this.props.id,
-			token: this.props.token,
-			...args
-		}));
+		xhr.open('GET', url, true);
+		xhr.send();
 
 		//Don't wait for a response
 		this.props.logout();

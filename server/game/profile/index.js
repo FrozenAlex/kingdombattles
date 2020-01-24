@@ -11,6 +11,8 @@ let {
 	getBadgesStatistics,
 	getBadgesOwned,
 	getLadderData,
+	getEquipmentOwned,
+	getEquipmentStatistics,
 	logActivity
 } = require('./../../utilities.js');
 
@@ -29,20 +31,24 @@ let pool = require('../../db/pool.js')
 
 // Import other files
 
+let training = require('./training.js');
 
 // Set up router
 var router = express.Router();
 
-router.post('/ladder', ladderRequest);  // Leaderboard
+router.post('/ladder', ladderRequest); // Leaderboard
 
 // Require auth for all of the routes below
 router.use(require('./../../middleware/auth').requireAuth);
 
 router.post('/', profileRequest);
+router.get('/', profileRequest);
+router.get('/name/:username', profileRequest);
 // router.post('/create', profileCreateRequest);
-// router.post('/train', trainRequest);
-// router.post('/untrain', untrainRequest);
+router.post('/train', trainRequest);
+router.post('/untrain', untrainRequest);
 router.post('/recruit', recruitRequest);
+router.get('/recruit', recruitRequest);
 
 
 
@@ -60,89 +66,125 @@ async function profileCreateRequest(req, res) {
 
 
 async function profileRequest(req, res) {
+	let user = req.session.user;
 	//separate this section so it can be used elsewhere too
-	let profile  =  await ProfileFunctions.getProfile(req.body.username)
+
+	// Check if requesting your own profile
+	let requestedUser = req.params.username || req.body.username || user.username;
+
+	let private = (user.username === requestedUser);
+
+	let profile = await ProfileFunctions.getProfile(requestedUser, private)
 	if (profile) {
+		res.status(200)
 		res.json(profile)
-		res.end(200);
-	}	else {
-		res.end(404);
+		res.end();
+	} else {
+		res.status(403).end();
 	}
 };
 
 
+async function trainRequest(req, res) {
+	let user = req.session.user;
+
+	// False = failure
+	let result = await training.trainRequest(user.id, req.body.role)
+
+	if (result) {
+		res.write(result);
+		res.status(400);
+		res.end();
+	} else {
+		let profile = await ProfileFunctions.getProfile(user.username, true)
+
+		let badgesOwned = await getBadgesOwned(user.id)
+
+		let activeBadge = Object.keys(badgesOwned).find(name => owned[name].active) || null;
+
+		res.status(200).json({
+			username: user.username,
+			gold: profile.gold,
+			recruits: profile.recruits,
+			soldiers: profile.soldiers,
+			spies: profile.spies,
+			scientists: profile.scientists,
+			activeBadge: activeBadge
+		});
+		res.end();
+
+		log('Train executed', user.username, req.body.role, user.id);
+		logActivity(user.id);
+	}
+}
+
+// A total copy of train request
+async function untrainRequest(req, res) {
+	let user = req.session.user;
+
+	// False = failure
+	let result = await training.untrainRequest(user.id, req.body.role)
+
+	if (result) {
+		res.write(result);
+		res.status(400);
+		res.end();
+	} else {
+		let profile = await ProfileFunctions.getProfile(user.username, true)
+
+		let badgesOwned = await getBadgesOwned(user.id)
+
+		let activeBadge = Object.keys(badgesOwned).find(name => owned[name].active) || null;
+
+		res.status(200).json({
+			username: user.username,
+			gold: profile.gold,
+			recruits: profile.recruits,
+			soldiers: profile.soldiers,
+			spies: profile.spies,
+			scientists: profile.scientists,
+			activeBadge: activeBadge
+		});
+		res.end();
+
+		log('Untrain executed', user.username, req.body.role, user.id);
+		logActivity(user.id);
+	}
+}
 
 //actual actions to be taken
 async function recruitRequest(req, res) {
 	//verify enough time has passed since the last successful recruit action
-	let query = 'SELECT TIMESTAMPDIFF(HOUR, (SELECT lastRecruitTime FROM profiles WHERE accountId = ?), CURRENT_TIMESTAMP());';
-	pool.query(query, [req.body.id], (err, results) => {
-		if (err) throw err;
+	let user = req.session.user;
 
-		if (results.length !== 1) {
-			res.status(400).write(log('Invalid database state', req.body.id, req.body.token));
-			res.end();
-			return;
-		}
+	// False = failure
+	let result = await training.recruitRequest(user.id);
 
-		let timespans = results[0][Object.keys(results[0])];
+	if (result) {
+		res.write(result);
+		res.status(400);
+		res.end();
+	} else {
+		let profile = await ProfileFunctions.getProfile(user.username, true)
 
-		//not enough time has passed
-		if (timespans < 20) {
-			res.status(400).write(log('Not enough time has passed', req.body.id, req.body.token));
-			res.end();
-			return;
-		}
+		let badgesOwned = await getBadgesOwned(user.id)
 
-		//update the profile with the new data (gaining 1 recruit)
-		let query = 'UPDATE profiles SET recruits = recruits + 1, lastRecruitTime = CURRENT_TIMESTAMP() WHERE accountId	= ?;';
-		pool.query(query, [req.body.id], (err) => {
-			if (err) throw err;
+		let activeBadge = Object.keys(badgesOwned).find(name => owned[name].active) || null;
 
-			//send the new profile data as JSON
-			let query = 'SELECT username, profiles.* FROM profiles JOIN accounts ON accounts.id = profiles.accountId WHERE accounts.id = ?;';
-			pool.query(query, [req.body.id], (err, results) => {
-				if (err) throw err;
-
-				//check just in case
-				if (results.length !== 1) {
-					res.status(400).write(log('Invalid recruit credentials - 2', req.body.id, req.body.token));
-					res.end();
-					return;
-				}
-
-				getBadgesOwned(connection, results[0].accountId, (err, {
-					owned
-				}) => {
-					if (err) throw err;
-
-					getBadgesStatistics((err, {
-						statistics
-					}) => {
-						if (err) throw err;
-
-						let activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
-
-						res.status(200).json({
-							username: results[0].username,
-							gold: results[0].gold,
-							recruits: results[0].recruits,
-							soldiers: results[0].soldiers,
-							spies: results[0].spies,
-							scientists: results[0].scientists,
-							activeBadge: activeBadge,
-							activeBadgeFilename: activeBadge ? statistics[activeBadge].filename : null
-						});
-						res.end();
-
-						log('Recruit successful', results[0].username, req.body.id, req.body.token);
-						logDiagnostics(connection, 'recruit', 1);
-						logActivity(req.body.id);
-					});
-				});
-			});
+		res.status(200).json({
+			username: user.username,
+			gold: profile.gold,
+			recruits: profile.recruits,
+			soldiers: profile.soldiers,
+			spies: profile.spies,
+			scientists: profile.scientists,
+			activeBadge: activeBadge
 		});
-	});
+		res.end();
+
+		log('Recruit executed', user.username, user.id);
+		logActivity(user.id);
+	}
 };
 
 

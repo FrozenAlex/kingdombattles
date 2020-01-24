@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Axios from 'axios';
 
 class Signup extends React.Component {
 	constructor(props) {
@@ -9,7 +10,7 @@ class Signup extends React.Component {
 			promotions: false
 		};
 
-		this.sendRequest('/api/account/privacysettings');
+		this.getPrivacySettings();
 	}
 
 	render() {
@@ -35,6 +36,15 @@ class Signup extends React.Component {
 				</form>
 			</div>
 		);
+	}
+
+	async getPrivacySettings(){
+		let result =await Axios.get('/api/account/privacy');
+	
+		this.setState({
+			...this.state,
+			promotions: result.data.promotions
+		})
 	}
 
 	//TODO: Fix this copy/pasted crap

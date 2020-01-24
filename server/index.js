@@ -1,8 +1,10 @@
+"use strict";
 //environment variables
 require('dotenv').config();
 
 //libraries
 let express = require('express');
+let compression = require('compression');
 let expressSession = require('express-session')
 let app = express();
 let http = require('http').Server(app);
@@ -11,11 +13,29 @@ let path = require('path');
 
 let pool = require("./db/pool");
 
-// expressSession()
+let MyStore = require('./util/sessionStore')(expressSession)
+
+// Use a session for each client
+app.use(
+	expressSession({
+	  secret: "ToatallySecretSessions",
+	  saveUninitialized: true,
+	  resave: true,
+	  cookie: {
+		httpOnly: false,
+		secure: false,
+	  },
+	  store: new MyStore({client: pool})
+	}),
+  );
 
 //utilities
 let { log } = require('../common/utilities.js');
 let { replacement, stringReplacement } = require('../common/replacement.js');
+
+app.use(compression({
+	level: 6
+}))
 
 // Temporary stuff
 app.use('/content/', express.static(path.resolve(__dirname + '/../public/content/')) );
@@ -27,13 +47,9 @@ app.use(bodyParser.json());
 let news = require('./news/news.js');
 app.use('/api/news', news);
 
-//database
-let { connectToDatabase } = require('./database.js');
-let connection = connectToDatabase(); //uses .env
-
 //handle diagnostics
 let diagnostics = require('./diagnostics.js');
-diagnostics.runDailyDiagnostics(connection);
+diagnostics.runDailyDiagnostics();
 
 //game statistics
 let statistics = require('./game/statistics.js');
@@ -56,23 +72,23 @@ let combat = require('./game/combat.js');
 app.post('/api/game/attack', combat.attackRequest);
 app.post('/api/game/attackstatus', combat.attackStatusRequest);
 app.post('/api/game/combatlog', combat.combatLogRequest);
-combat.runCombatTick(connection);
+combat.runCombatTick();
 
 let spying = require('./game/spying.js');
-app.post('/api/game/spy/', spying.spyRequest(connection));
-app.post('/api/game/spy/status', spying.spyStatusRequest(connection));
-app.post('/api/game/spy/log', spying.spyLogRequest(connection));
-spying.runSpyTick(connection);
+app.post('/api/game/spy/', spying.spyRequest);
+app.post('/api/game/spy/status', spying.spyStatusRequest);
+app.post('/api/game/spy/log', spying.spyLogRequest);
+spying.runSpyTick();
 
 let equipment = require('./game/equipment.js');
-app.post('/api/game/equipment/', equipment.equipmentRequest(connection));
-app.post('/api/game/equipment/purchase', equipment.purchaseRequest(connection));
-app.post('/api/game/equipment/sell', equipment.sellRequest(connection));
+app.post('/api/game/equipment/', equipment.equipmentRequest);
+app.post('/api/game/equipment/purchase', equipment.purchaseRequest);
+app.post('/api/game/equipment/sell', equipment.sellRequest);
 
 let badges = require('./game/badges.js');
 app.post('/api/game/badges/owned', badges.ownedRequest);
 app.post('/api/game/badges/active', badges.selectActiveBadge);
-badges.runBadgeTicks(connection);
+badges.runBadgeTicks();
 
 //a bit of fun
 const taglineEngine = replacement(require('./taglines.json'));

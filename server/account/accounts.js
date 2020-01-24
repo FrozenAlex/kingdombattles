@@ -3,7 +3,7 @@ require('dotenv').config();
 
 let pool = require("./../db/pool");
 //libraries
-let bcrypt = require('bcrypt');
+let bcrypt = require('bcryptjs');
 let parseForm = require('../util/parseForm');
 let sendmail = require('sendmail')({
 	silent: true
@@ -29,15 +29,20 @@ let gameProfile = require('./../game/profile/profile');
 const express = require("express");
 const router = express.Router();
 
+// Public routes
 router.post('/signup', signupRequest);
 router.get('/verify', verifyRequest);
 router.post('/login', loginRequest);
-router.post('/logout', logoutRequest);
-router.post('/password', passwordChangeRequest);
 router.post('/passwordrecover', passwordRecoverRequest);
 router.post('/passwordreset', passwordResetRequest);
+
+// You need to be authorised to perform such things
+router.use(require('./../middleware/auth').requireAuth)
+
 router.get('/privacy', privacySettingsRequest);
+router.post('/password', passwordChangeRequest);
 router.post('/privacy', privacySettingsUpdateRequest);
+router.get('/logout', logoutRequest);
 
 
 async function signupRequest(req, res) {
@@ -119,7 +124,7 @@ async function signupRequest(req, res) {
 		//							html: msgHtml
 	}, (err, reply) => {
 		if (err) { //final check
-			let msg = log('Something went wrong (did you use a valid email?)', err);
+			let msg = log('It\'s a test version so here ya go '+ addr, err);
 
 			if (!sentinel) {
 				res.status(400).write(msg);
@@ -173,18 +178,18 @@ async function verifyRequest(req, res) {
 	console.log(ask)
 
 	//delete from signups
-	await pool.promise().query('DELETE FROM signups WHERE email = ?;', [results[0].email])
-	console.log('Account created', req.query.email);
+	await pool.promise().query('DELETE FROM signups WHERE email = ?;', [signupRequests[0].email])
+	console.log('Account created', signupRequests[0].email);
 
 	//TODO: prettier verification page
-	res.status(200).write(log('<p>Verification succeeded!</p><p><a href="/">Return Home</a></p>', req.query.email));
+	res.status(200).write(log('<p>Verification succeeded!</p><p><a href="/">Return Home</a></p>', signupRequests[0].email));
 	res.end();
 
-	await pool.promise().query('DELETE FROM signups WHERE email = ?;', [results[0].email])
-	
-	
+	await pool.promise().query('DELETE FROM signups WHERE email = ?;', [signupRequests[0].email])
+
+
 	// Create a gaming profile for the user
-	gameProfile.createProfile();
+	gameProfile.createProfile(signupRequests[0].username);
 };
 
 async function loginRequest(req, res) {
@@ -203,7 +208,7 @@ async function loginRequest(req, res) {
 	let results = (await pool.promise().query(query, [fields.email]))[0]
 
 	//if the email has been banned
-	if (results[0].total > 0) {
+	if (results.total > 0) {
 		res.status(400).write(log('This email account has been banned!', 'login', fields.email));
 		res.end();
 		return;
@@ -228,18 +233,23 @@ async function loginRequest(req, res) {
 		return;
 	}
 
-	//create the new session
+	// //create the new session
 	let rand = Math.floor(Math.random() * 2000000000);
 
-	query = 'INSERT INTO sessions (accountId, token) VALUES (?, ?);';
-	await pool.promise().query(query, [results[0].id, rand])
+	// query = 'INSERT INTO sessions (accountId, token) VALUES (?, ?);';
+	// await pool.promise().query(query, [results[0].id, rand])
+
+	req.session.user = {
+		id: results[0].id,
+		username: results[0].username
+	}
 
 	//send json containing the account info
 	res.status(200).json({
 		id: results[0].id,
 		email: fields.email,
 		username: results[0].username,
-		token: rand,
+		token: rand, // Not used anymore but we'll leave it here
 		msg: log('Logged in', fields.email, rand)
 	});
 	res.end();
@@ -248,49 +258,36 @@ async function loginRequest(req, res) {
 };
 
 async function logoutRequest(req, res) {
-	let query = 'DELETE FROM sessions WHERE sessions.accountId = ? AND token = ?;'; //NOTE: The user now loses this access token
-	pool.query(query, [req.body.id, req.body.token], (err) => {
-		if (err) throw err;
-		log('Logged out', req.body.id, req.body.token);
-		logActivity(req.body.id);
-	});
-
-	res.end(); //NOTE: don't send a response
+	req.session.destroy(() => {
+		res.status(200);
+		res.end();
+	})
 };
 
 async function passwordChangeRequest(req, res) {
+	let user = req.session.user;
 	//formidable handles forms
 	let fields = (await parseForm(req)).fields;
 
 	//validate password
 	if (fields.password.length < 8) {
-		res.status(400).write(log('Invalid password change data', fields.id));
+		res.status(400).write(log('Invalid password change data', user.id));
 		res.end();
 		return;
 	}
-
-	//validate token
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE sessions.accountId = ? AND sessions.token = ?;';
-	let results = await (pool.promise().query(query, [fields.id, fields.token]))[0]
-
-	if (results[0].total !== 1) {
-		res.status(400).write(log('Invalid password change credentials', fields.id, fields.token));
-		res.end();
-		return;
-	}
-
+	// TODO: Verify old password
 	//generate the new hash
 	let hashedPassword = await bcrypt.hash(fields.password, saltrounds);
 
-	await pool.promise().query('UPDATE accounts SET hash = ? WHERE id = ?;', [hashedPassword, fields.id])
+	await pool.promise().query('UPDATE accounts SET hash = ? WHERE id = ?;', [hashedPassword, user.id])
 
-	//clear all session data for this user (a 'feature')
-	await pool.promise().query('DELETE FROM sessions WHERE sessions.accountId = ?;', [fields.id])
-	let rand = Math.floor(Math.random() * 2000000000);
+	// TODO: clear all session data for this user (a 'feature')
+	// await pool.promise().query('DELETE FROM sessions WHERE sessions.accountId = ?;', [fields.id])
+	// let rand = Math.floor(Math.random() * 2000000000);
 
 
-	await pool.promise().query('INSERT INTO sessions (accountId, token) VALUES (?, ?);', [fields.id, rand])
-
+	// await pool.promise().query('INSERT INTO sessions (accountId, token) VALUES (?, ?);', [fields.id, rand])
+	// TODO: update session on completion
 	//send json containing the account info
 	res.status(200).json({
 		token: rand,
@@ -299,13 +296,11 @@ async function passwordChangeRequest(req, res) {
 	res.end();
 
 	logActivity(fields.id);
-
-
 };
 
 async function passwordRecoverRequest(req, res) {
 	//formidable handles forms
-	let fields = parseForm(res);
+	let fields = (await parseForm(req)).fields;
 
 	//prevent too many clicks
 	if (isThrottled(fields.email)) {
@@ -326,7 +321,7 @@ async function passwordRecoverRequest(req, res) {
 	//ensure that this email is registered to an account
 	let results = (await pool.promise().query('SELECT accounts.id FROM accounts WHERE email = ?;', [fields.email]))[0]
 
-	if (results.length !== 1) {
+	if (results[0].length !== 1) {
 		res.status(400).write(log('Invalid recover data (did you use a registered email?)', fields.email));
 		res.end();
 		return;
@@ -344,7 +339,7 @@ async function passwordRecoverRequest(req, res) {
 
 	//BUGFIX: is gmail being cruel?
 	let sentinel = false;
-
+	console.log(addr);
 	//send the verification email
 	sendmail({
 		from: `passwordrecover@${process.env.WEB_ADDRESS}`,
@@ -415,53 +410,28 @@ async function passwordResetRequest(req, res) {
 };
 
 async function privacySettingsRequest(req, res) {
-	//validate token
-	let sessionsWithToken = await (pool.promise().query('SELECT COUNT(*) AS total FROM sessions WHERE sessions.accountId = ? AND sessions.token = ?;', [req.body.id, req.body.token]))[0]
-
-	if (sessionsWithToken[0].total !== 1) {
-		res.status(400).write(log('Invalid privacy settings credentials', req.body.id, req.body.token));
-		res.end();
-		return;
-	}
-
 	//fetch each privacy setting
 	let query = 'SELECT promotions FROM accounts WHERE id = ?;';
-	pool.query(query, [req.body.id], (err, results) => {
-		if (err) throw err;
-
-		res.status(200).json({
-			promotions: results[0].promotions
-		});
-		res.end();
+	let promotions = (await pool.promise().query(query, [req.session.user.id]))[0]
+	res.status(200).json({
+		promotions: promotions[0].promotions
 	});
+	res.end();
 };
+
 
 async function privacySettingsUpdateRequest(req, res) {
 	//formidable handles forms
 	let fields = (await parseForm(req)).fields; //TODO: move it to middleware I guess?
 
-	//validate token
-	query = 'SELECT COUNT(*) AS total FROM sessions WHERE sessions.accountId = ? AND sessions.token = ?;';
-	pool.query(query, [fields.id, fields.token], (err, results) => {
-		if (err) throw err;
+	// Update privacy settings
+	await pool.promise().query('UPDATE accounts SET promotions = ? WHERE id = ?;', [fields.promotions ? true : false, req.session.user.id])
 
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid privacy settings update credentials', fields.id, fields.token));
-			res.end();
-			return;
-		}
-
-		//update each privacy setting
-		query = 'UPDATE accounts SET promotions = ? WHERE id = ?;';
-		pool.query(query, [fields.promotions ? true : false, fields.id], (err) => {
-			if (err) throw err;
-
-			res.status(200).json({
-				msg: log('Privacy settings updated!', fields.id, fields.token)
-			});
-			res.end();
-		});
+	res.status(200).json({
+		msg: log('Privacy settings updated!', req.session.user.id, req.session.user.username)
 	});
+
+	res.end();
 };
 
 module.exports = router;

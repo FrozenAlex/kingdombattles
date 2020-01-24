@@ -74,7 +74,7 @@ class Equipment extends React.Component {
 	async getProfile(url, username = "") { //send a unified request, using my credentials
 		// use Axios
 		let response = await Axios.get(`/api/game/profile/${username}`, {
-			withCredentials:true
+			withCredentials: true
 		})
 
 		//on success
@@ -82,22 +82,14 @@ class Equipment extends React.Component {
 		this.props.storeGold(response.data.gold);
 	}
 
-	// xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-	// xhr.send(JSON.stringify({
-	// 	id: this.props.id,
-	// 	token: this.props.token,
-	// 	...args
-	// }));
+	//bound callbacks
+	getFetch(fn) {
+		this.setState({ fetch: fn });
+	}
 
-
-//bound callbacks
-getFetch(fn) {
-	this.setState({ fetch: fn });
-}
-
-setWarning(s) {
-	this.setState({ warning: s });
-}
+	setWarning(s) {
+		this.setState({ warning: s });
+	}
 };
 
 Equipment.propTypes = {

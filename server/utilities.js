@@ -79,7 +79,7 @@ const isAttacking = async (user) => {
 		throw TypeError(`isAttacking: Unknown argument type for user: ${typeof(user)}`);
 	}
 
-	let results = await pool.promise().query(query, [user], (err, results))[0];
+	let results = (await pool.promise().query(query, [user]))[0];
 	if (results.length === 0) {
 		// Don't return anything
 		return null

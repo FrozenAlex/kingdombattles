@@ -11,9 +11,16 @@ class Equipment extends React.Component {
 			data: []
 		};
 
-		if (this.props.getFetch) {
-			this.props.getFetch((field) => this.sendRequest('/api/game/equipment/', {field: field} ));
-		}
+		
+		
+	}
+
+	async componentDidMount () {
+		// TODO: Check what's going on
+		// let hack = this.sendRequest
+		// if (this.props.getFetch) {
+		// 	this.props.getFetch((field) => this.getProfile('/api/game/equipment/', {field: field} ));
+		// }
 	}
 
 	render() {
@@ -24,7 +31,7 @@ class Equipment extends React.Component {
 			return (
 				<div className='panel'>
 					<p className='centered'>You have no scientists!</p>
-					<p className='centered'>Go and <Link to='/profile'>train some!</Link></p>
+					<p className='centered'>Go and <Link to='/profile/'>train some!</Link></p>
 				</div>
 			);
 		}

@@ -1,7 +1,6 @@
 //libraries
 let mysql = require('mysql2');
 
-
 let config;
 if (process.env.DATABASE_URL) {
 	let credentials = new URL(process.env.DATABASE_URL);

@@ -12,7 +12,7 @@ let {
 let pool = require('../../db/pool.js')
 
 async function runLadderTick() {
-	let ladderTickJob = new CronJob('* * * * * *', async () => {
+	let ladderTickJob = new CronJob('0 0 * * * *', async () => {
 		//set the ladder rank weight / so much sql
 		await pool.promise().query(
 			'UPDATE profiles SET ladderRankWeight = (soldiers * 5 + (recruits + scientists + spies) + (SELECT COUNT(*) FROM pastCombat WHERE (attackerId = accountId AND victor = "attacker" AND attackingUnits <= IF(undefended, defendingUnits * 0.25, defendingUnits)) OR (defenderId = accountId AND victor = "defender")) / 10 + gold / 10);'
@@ -24,11 +24,8 @@ async function runLadderTick() {
 		await pool.promise().query(
 			`INSERT INTO profiles (id, ladderRank) VALUES ${ profiles.map((record, index) => `(${record.id}, ${index})` ) } ON DUPLICATE KEY UPDATE id = VALUES(id), ladderRank = VALUES(ladderRank);`
 		);
-		console.log("ranking updated")
 		log('runLadderTick completed');
 	});
-
-
 	ladderTickJob.start();
 };
 

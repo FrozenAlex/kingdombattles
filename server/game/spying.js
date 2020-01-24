@@ -5,272 +5,233 @@ require('dotenv').config();
 let CronJob = require('cron').CronJob;
 
 //utilities
-let { logDiagnostics } = require('./../diagnostics.js');
-let { log } = require('../../common/utilities.js');
+let {
+	logDiagnostics
+} = require('./../diagnostics.js');
+let {
+	log
+} = require('../../common/utilities.js');
 
-let { getEquipmentStatistics, isSpying, isAttacking, logActivity } = require('./../utilities.js');
+let {
+	getEquipmentStatistics,
+	isSpying,
+	isAttacking,
+	logActivity
+} = require('./../utilities.js');
 
-const spyRequest = (connection) => (req, res) => {
-	//verify the attacker's credentials (only the attacker can launch an attack)
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;';
-	connection.query(query, [req.body.id, req.body.attacker, req.body.token], (err, results) => {
+const pool = require('./../db/pool.js');
+
+const spyRequest = (req, res) => {
+	/// Attacker = username
+	/// id - user id
+	// 
+	let user = req.session.user;
+
+	//verify that the defender's profile exists
+	let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);';
+	pool.query(query, [req.body.defender], (err, results) => {
 		if (err) throw err;
 
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid spying credentials', req.body.id, req.body.attacker, req.body.defender, req.body.token));
+		if (results.length !== 1) {
+			res.status(400).write(log('Invalid defender spying credentials', user.id, user.username, req.body.defender));
 			res.end();
 			return;
 		}
 
-		//verify that the defender's profile exists
-		let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);';
-		connection.query(query, [req.body.defender], (err, results) => {
+		let defenderId = results[0].accountId;
+
+		//verify that the attacker has enough spies
+		let query = 'SELECT spies FROM profiles WHERE accountId = ?;';
+		pool.query(query, [user.id], async (err, results) => {
 			if (err) throw err;
 
-			if (results.length !== 1) {
-				res.status(400).write(log('Invalid defender spying credentials', req.body.id, req.body.attacker, req.body.defender, req.body.token));
+			if (results[0].spies <= 0) {
+				res.status(400).write(log('Not enough spies', user.username, req.body.defender, results[0].spies));
 				res.end();
 				return;
 			}
 
-			let defenderId = results[0].accountId;
+			let attackingUnits = results[0].spies;
 
-			//verify that the attacker has enough spies
-			let query = 'SELECT spies FROM profiles WHERE accountId = ?;';
-			connection.query(query, [req.body.id], (err, results) => {
+			//verify that the attacker is not already spying on someone
+			let spying = await isSpying(user.username)
+			if (spying) {
+				res.status(400).write(log('You are already spying on someone', user.id, user.username, req.body.token));
+				res.end();
+				return;
+			}
+
+			//create the pending spy record
+			let query = 'INSERT INTO pendingSpying (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 10 * ? MINUTE), ?, ?, ?);';
+			pool.query(query, [attackingUnits, user.id, defenderId, attackingUnits], (err) => {
 				if (err) throw err;
 
-				if (results[0].spies <= 0) {
-					res.status(400).write(log('Not enough spies', req.body.attacker, req.body.defender, results[0].spies));
-					res.end();
-					return;
-				}
-
-				let attackingUnits = results[0].spies;
-
-				//verify that the attacker is not already spying on someone
-				isSpying(connection, req.body.attacker, (err, spying) => {
-					if (err) throw err;
-
-					if (spying) {
-						res.status(400).write(log('You are already spying on someone', req.body.id, req.body.attacker, req.body.token));
-						res.end();
-						return;
-					}
-
-					//create the pending spy record
-					let query = 'INSERT INTO pendingSpying (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 10 * ? MINUTE), ?, ?, ?);';
-					connection.query(query, [attackingUnits, req.body.id, defenderId, attackingUnits], (err) => {
-						if (err) throw err;
-
-						res.status(200).json({
-							status: 'spying',
-							attacker: req.body.attacker,
-							defender: req.body.defender,
-							msg: log('Spying', req.body.attacker, req.body.defender) //TODO: am I using this msg parameter anywhere?
-						});
-						res.end();
-
-						logActivity(req.body.id);
-					});
+				res.status(200).json({
+					status: 'spying',
+					attacker: user.username,
+					defender: req.body.defender,
+					msg: log('Spying', user.username, req.body.defender) //TODO: am I using this msg parameter anywhere?
 				});
+				res.end();
+
+				logActivity(user.id);
 			});
+
 		});
 	});
 };
 
-const spyStatusRequest = (connection) => (req, res) => {
-	//verify the credentials
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	connection.query(query, [req.body.id, req.body.token], (err, results) => {
+/**
+ * Check if someone is spying // Limit it to preserve secrecy?
+ * @param {*} req 
+ * @param {*} res 
+ */
+const spyStatusRequest = async (req, res) => {
+	let spying = await isSpying(req.body.id)
+
+	res.status(200).json({
+		status: spying ? 'spying' : 'idle',
+		defender: spying
+	});
+
+	res.end();
+};
+
+// TODO: Fix it
+const spyLogRequest = (req, res) => {
+	//grab the spying log and equipment stolen based on the id
+	let query = 'SELECT pastSpying.id AS id, pastSpying.eventTime AS eventTime, pastSpying.attackerId AS attackerId, pastSpying.defenderId AS defenderId, atk.username AS attackerUsername, def.username AS defenderUsername, pastSpying.attackingUnits AS attackingUnits, pastSpying.success AS success, pastSpying.spoilsGold AS spoilsGold, equipmentStolen.name AS equipmentStolenName, equipmentStolen.type AS equipmentStolenType, equipmentStolen.quantity AS equipmentStolenQuantity FROM pastSpying LEFT JOIN equipmentStolen ON pastSpying.id = equipmentStolen.pastSpyingId LEFT JOIN accounts AS atk ON pastSpying.attackerId = atk.id LEFT JOIN accounts AS def ON pastSpying.defenderId = def.id WHERE pastSpying.attackerId = ? OR pastSpying.defenderId = ? ORDER BY eventTime DESC LIMIT ?, ?;';
+	pool.query(query, [req.body.id, req.body.id, req.body.start, req.body.length], (err, results) => {
 		if (err) throw err;
 
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid spy status request credentials', req.body.id, req.body.token));
-			res.end();
-			return;
-		}
+		//build the sendable data structure (delete names from successful events when you're the losing defender, etc.)
+		let ret = [];
 
-		isSpying(connection, req.body.id, (err, spying, defender) => {
-			if (err) throw err;
+		results.forEach((result) => {
+			//appending equipment stolen
+			if (ret[result.id]) {
+				ret[result.id].equipmentStolen.push({
+					name: result.equipmentStolenName,
+					type: result.equipmentStolenType,
+					quantity: result.equipmentStolenQuantity
+				});
+				return;
+			}
 
-			res.status(200).json({
-				status: spying ? 'spying' : 'idle',
-				defender: defender
-			});
+			let hideData = req.body.id === result.defenderId && (result.success === 'success' || result.success === 'ineffective');
 
-			res.end();
+			//creating a new entry
+			ret[result.id] = {
+				eventTime: result.eventTime,
+				attacker: hideData ? null : result.attackerUsername,
+				defender: result.defenderUsername,
+				attackingUnits: hideData ? null : result.attackingUnits,
+				success: result.success,
+				spoilsGold: result.spoilsGold,
+				equipmentStolen: result.equipmentStolenName ? [{
+					name: result.equipmentStolenName,
+					type: result.equipmentStolenType,
+					quantity: result.equipmentStolenQuantity
+				}] : []
+			};
 		});
+
+		//remove null fields
+		ret = ret.filter(x => x);
+
+		//send the build structure
+		res.status(200).json(ret);
+		res.end();
+
+		log('Spy log sent', JSON.stringify(ret));
 	});
 };
 
-const spyLogRequest = (connection) => (req, res) => {
-	//verify the user's credentials
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	connection.query(query, [req.body.id, req.body.token], (err, results) => {
-		if (err) throw err;
-
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid spy log credentials', req.body.id, req.body.token));
-			res.end();
-			return;
-		}
-
-		//grab the spying log and equipment stolen based on the id
-		let query = 'SELECT pastSpying.id AS id, pastSpying.eventTime AS eventTime, pastSpying.attackerId AS attackerId, pastSpying.defenderId AS defenderId, atk.username AS attackerUsername, def.username AS defenderUsername, pastSpying.attackingUnits AS attackingUnits, pastSpying.success AS success, pastSpying.spoilsGold AS spoilsGold, equipmentStolen.name AS equipmentStolenName, equipmentStolen.type AS equipmentStolenType, equipmentStolen.quantity AS equipmentStolenQuantity FROM pastSpying LEFT JOIN equipmentStolen ON pastSpying.id = equipmentStolen.pastSpyingId LEFT JOIN accounts AS atk ON pastSpying.attackerId = atk.id LEFT JOIN accounts AS def ON pastSpying.defenderId = def.id WHERE pastSpying.attackerId = ? OR pastSpying.defenderId = ? ORDER BY eventTime DESC LIMIT ?, ?;';
-		connection.query(query, [req.body.id, req.body.id, req.body.start, req.body.length], (err, results) => {
-			if (err) throw err;
-
-			//build the sendable data structure (delete names from successful events when you're the losing defender, etc.)
-			let ret = [];
-
-			results.forEach((result) => {
-				//appending equipment stolen
-				if (ret[result.id]) {
-					ret[result.id].equipmentStolen.push({
-						name: result.equipmentStolenName,
-						type: result.equipmentStolenType,
-						quantity: result.equipmentStolenQuantity
-					});
-					return;
-				}
-
-				let hideData = req.body.id === result.defenderId && (result.success === 'success' || result.success === 'ineffective');
-
-				//creating a new entry
-				ret[result.id] = {
-					eventTime: result.eventTime,
-					attacker: hideData ? null : result.attackerUsername,
-					defender: result.defenderUsername,
-					attackingUnits: hideData ? null : result.attackingUnits,
-					success: result.success,
-					spoilsGold: result.spoilsGold,
-					equipmentStolen: result.equipmentStolenName ? [{
-						name: result.equipmentStolenName,
-						type: result.equipmentStolenType,
-						quantity: result.equipmentStolenQuantity
-					}] : []
-				};
-			});
-
-			//remove null fields
-			ret = ret.filter(x => x);
-
-			//send the build structure
-			res.status(200).json(ret);
-			res.end();
-
-			log('Spy log sent', JSON.stringify(ret));
-		});
-	});
-};
-
-const runSpyTick = (connection) => {
+const runSpyTick = () => {
 	//find each pending spy event
-	let spyTick = new CronJob('* * * * * *', () => {
-		let query = 'SELECT * FROM pendingSpying WHERE eventTime < CURRENT_TIMESTAMP();';
-		connection.query(query, (err, results) => {
-			if (err) throw err;
+	let spyTick = new CronJob('* * * * * *', async () => {
+		// Get list of spying requests
+		let pendingSpyingList = (await pool.promise().query(
+			'SELECT * FROM pendingSpying WHERE eventTime < CURRENT_TIMESTAMP();'
+		))[0]
 
-			results.forEach((pendingSpying) => {
-				//check that the attacker still has enough spies
-				let query = 'SELECT spies FROM profiles WHERE accountId = ?;';
-				connection.query(query, [pendingSpying.attackerId], (err, results) => {
+		// Execute every single one 
+		pendingSpyingList.forEach(async (pendingSpying) => {
+			//check that the attacker still has enough spies
+			let query = 'SELECT spies FROM profiles WHERE accountId = ?;';
+			let attackerSpies = (await pool.promise().query(query, [pendingSpying.attackerId]))[0]
+
+			if (attackerSpies[0].spies < pendingSpying.attackingUnits) {
+				//delete the failed spying
+				let query = 'DELETE FROM pendingSpying WHERE id = ?;';
+				pool.query(query, [pendingSpying.id], (err) => {
 					if (err) throw err;
-
-					if (results[0].spies < pendingSpying.attackingUnits) {
-						//delete the failed spying
-						let query = 'DELETE FROM pendingSpying WHERE id = ?;';
-						connection.query(query, [pendingSpying.id], (err) => {
-							if (err) throw err;
-							log('Not enough spies for spying', pendingSpying.attackerId, results[0].spies, pendingSpying.attackingUnits);
-						});
-						return;
-					}
-
-					//spy gameplay logic
-					spyGameplayLogic(connection, pendingSpying);
+					log('Not enough spies for spying', pendingSpying.attackerId, attackerSpies[0].spies, pendingSpying.attackingUnits);
 				});
-			});
+				return;
+			}
+
+			//spy gameplay logic
+			spyGameplayLogic(pendingSpying);
 		});
 	});
+
 
 	spyTick.start();
 };
 
-const spyGameplayLogic = (connection, pendingSpying) => {
-	//determine how many pairs of defender eyes are available to spot the spies
-	isAttacking(connection, pendingSpying.defenderId, (err, defenderIsAttacking) => {
-		if (err) throw err;
-		isSpying(connection, pendingSpying.defenderId, (err, defenderIsSpying) => {
-			if (err) throw err;
+const spyGameplayLogic = async (pendingSpying) => {
+	// determine how many pairs of defender eyes are available to spot the spies
+	let defenderIsAttacking = await isAttacking(pendingSpying.defenderId);
+	let defenderIsSpying = await isSpying(pendingSpying.defenderId);
 
-			let query = 'SELECT * FROM profiles WHERE accountId = ?;';
-			connection.query(query, [pendingSpying.defenderId], (err, results) => {
-				if (err) throw err;
+	let profile = (await pool.promise().query('SELECT * FROM profiles WHERE accountId = ?;', [pendingSpying.defenderId]))[0]
 
-				let totalEyes = results[0].recruits + results[0].soldiers * !defenderIsAttacking + results[0].spies * !defenderIsSpying + results[0].scientists;
+	let totalEyes = profile[0].recruits + profile[0].soldiers * !defenderIsAttacking + profile[0].spies * !defenderIsSpying + profile[0].scientists;
 
-				//more spies reduces the chances of being seen? Counter intuitive
-				let chanceSeen = totalEyes / (pendingSpying.attackingUnits  * 10); //it takes 10 eyes to guarantee the capture of 1 spy, 50% chance to capture 2 spies, etc.
+	//more spies reduces the chances of being seen? Counter intuitive
+	let chanceSeen = totalEyes / (pendingSpying.attackingUnits * 10); //it takes 10 eyes to guarantee the capture of 1 spy, 50% chance to capture 2 spies, etc.
 
-				//if seen (failure)
-				if (Math.random() <= chanceSeen) {
-					let query = 'INSERT INTO pastSpying (eventTime, attackerId, defenderId, attackingUnits, success, spoilsGold) VALUES (?, ?, ?, ?, "failure", 0);';
-					connection.query(query, [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits], (err) => {
-						if (err) throw err;
+	//if seen (failure)
+	if (Math.random() <= chanceSeen) {
+		// Write fail to the spying log
+		await pool.promise().query(
+			'INSERT INTO pastSpying (eventTime, attackerId, defenderId, attackingUnits, success, spoilsGold) VALUES (?, ?, ?, ?, "failure", 0);',
+			[pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits]
+		)
 
-						//spies die on failure
-						let query = 'UPDATE profiles SET spies = spies - ? WHERE accountId = ?;';
-						connection.query(query, [pendingSpying.attackingUnits, pendingSpying.attackerId], (err) => {
-							if (err) throw err;
+		// Kill the spies on failure
+		await pool.promise().query('UPDATE profiles SET spies = spies - ? WHERE accountId = ?;', [pendingSpying.attackingUnits, pendingSpying.attackerId])
 
-							//delete from pending
-							let query = 'DELETE FROM pendingSpying WHERE id = ?;'
-							connection.query(query, [pendingSpying.id], (err) => {
-								if (err) throw err;
+		//delete from pending
+		await pool.promise().query('DELETE FROM pendingSpying WHERE id = ?;', [pendingSpying.id]);
+		log('Spy failed', pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, totalEyes);
+		logDiagnostics('death', pendingSpying.attackingUnits);
+	} else {
+		//steal this much gold on success
+		let spoilsGold = Math.random() >= 0.5 ? Math.floor(results[0].gold * 0.2) : 0; //50% chance of stealing gold
+		await pool.promise().query(
+			'INSERT INTO pastSpying (eventTime, attackerId, defenderId, attackingUnits, success, spoilsGold) VALUES (?, ?, ?, ?, ?, ?);', [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, spoilsGold ? 'success' : 'ineffective', spoilsGold])
 
-								log('Spy failed', pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, totalEyes);
-								logDiagnostics(connection, 'death', pendingSpying.attackingUnits);
-							});
-						});
-					});
-				} else {
-					//steal this much gold on success
-					let spoilsGold = Math.random() >= 0.5 ? Math.floor(results[0].gold * 0.2) : 0; //50% chance of stealing gold
-					let query = 'INSERT INTO pastSpying (eventTime, attackerId, defenderId, attackingUnits, success, spoilsGold) VALUES (?, ?, ?, ?, ?, ?);';
-					connection.query(query, [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, spoilsGold ? 'success' : 'ineffective', spoilsGold], (err) => {
-						if (err) throw err;
+		// Give gold to the attacker
+		await pool.promise().query('UPDATE profiles SET gold = gold + ? WHERE accountId = ?;', [spoilsGold, pendingSpying.attackerId])
 
-						let query = 'UPDATE profiles SET gold = gold + ? WHERE accountId = ?;';
-						connection.query(query, [spoilsGold, pendingSpying.attackerId], (err) => {
-							if (err) throw err;
+		// Remove gold from the defender
+		await pool.promise().query('UPDATE profiles SET gold = gold - ? WHERE accountId = ?;', [spoilsGold, pendingSpying.defenderId])
 
-							let query = 'UPDATE profiles SET gold = gold - ? WHERE accountId = ?;';
-							connection.query(query, [spoilsGold, pendingSpying.defenderId], (err) => {
-								if (err) throw err;
+		//delete from pending
+		await pool.promise().query('DELETE FROM pendingSpying WHERE id = ?;', [pendingSpying.id])
 
-								//delete from pending
-								let query = 'DELETE FROM pendingSpying WHERE id = ?;'
-								connection.query(query, [pendingSpying.id], (err) => {
-									if (err) throw err;
+		log('Spy succeeded', pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, totalEyes, spoilsGold);
 
-									log('Spy succeeded', pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, totalEyes, spoilsGold);
+		spyStealEquipment(pendingSpying, spoilsGold);
+	}
 
-									spyStealEquipment(connection, pendingSpying, spoilsGold);
-								});
-							});
-						});
-					});
-				}
-			});
-		});;
-	});
 };
 
-const spyStealEquipment = (connection, pendingSpying, spoilsGold) => {
+const spyStealEquipment = (pendingSpying, spoilsGold) => {
 	let query = 'SELECT id FROM pastSpying WHERE eventTime = ? AND attackerId = ? AND defenderId = ? AND spoilsGold = ?;'; //make it VERY hard to grab the wrong one
-	connection.query(query, [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, spoilsGold], (err, results) => {
+	pool.query(query, [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, spoilsGold], (err, results) => {
 		if (err) throw err;
 
 		let successfulSpies = 0;
@@ -282,75 +243,57 @@ const spyStealEquipment = (connection, pendingSpying, spoilsGold) => {
 			}
 		}
 
-		spyStealEquipmentInner(connection, pendingSpying.attackerId, pendingSpying.defenderId, successfulSpies, results[0].id);
+		spyStealEquipmentInner(pendingSpying.attackerId, pendingSpying.defenderId, successfulSpies, results[0].id);
 	});
 };
 
-const spyStealEquipmentInner = (connection, attackerId, defenderId, attackingUnits, pastSpyingId) => {
+const spyStealEquipmentInner = async (attackerId, defenderId, attackingUnits, pastSpyingId) => {
 	//NOTE: steal equipment that isn't being carried by soldiers
-	isAttacking(connection, defenderId, (err, attacking) => {
-		let query = 'SELECT * FROM equipment WHERE accountId = ?;';
-		connection.query(query, [defenderId], (err, results) => {
-			if (err) throw err;
+	let attacking = await isAttacking(defenderId);
+	// Get defenders equipment 
+	let defenderEquipment = (await pool.promise().query('SELECT * FROM equipment WHERE accountId = ?;', [defenderId]))[0]
 
-			getEquipmentStatistics((err, { statistics }) => {
-				if (err) throw err;
+	let equipment = getEquipmentStatistics()
 
-				//don't steal certain items
-				results = results.filter(item => statistics[item.type][item.name].stealable);
+	//don't steal certain items
+	defenderEquipment = defenderEquipment.filter(item => equipment[item.type][item.name].stealable);
 
-				//if he's not attacking, skip to the next step
-				if (!attacking) {
-					return spyStealEquipmentSelectItemsToSteal(connection, attackerId, defenderId, attackingUnits, results, pastSpyingId);
-				}
+	//if he's not attacking, skip to the next step
+	if (!attacking) {
+		return spyStealEquipmentSelectItemsToSteal(attackerId, defenderId, attackingUnits, results, pastSpyingId);
+	}
 
-				//count the number of weapons/consumable items to be skipped, from strongest to weakest
-				let query = 'SELECT soldiers FROM profiles WHERE accountId = ?;';
-				connection.query(query, [defenderId], (err, results) => {
-					if (err) throw err;
+	//count the number of weapons/consumable items to be skipped, from strongest to weakest
+	let defenderSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;', [defenderId]))[0];
+	let soldierCount = defenderSoldiers[0].soldiers;
 
-					let soldierCount = results[0].soldiers;
+	// Armour
+	let defenderArmour = (await pool.promise().query('SELECT * FROM equipment WHERE accountId = ? AND type = "Armour";', [defenderId]))[0];
+	// ArmourResults
+	//NOTE: Armour stays at home - it's never carried by soldiers (don't call removeForEachSoldier)
 
-					//armour
-					let query = 'SELECT * FROM equipment WHERE accountId = ? AND type = "Armour";';
-					connection.query(query, [defenderId], (err, armourResults) => {
-						if (err) throw err;
+	//weapons
+	let defenderWeapons = (await pool.promise().query('SELECT * FROM equipment WHERE accountId = ? AND type = "Weapon";', [defenderId]))[0];
+	// Steal weapons
+	let weaponResults = await removeForEachSoldier(defenderWeapons, soldierCount);
 
-						//NOTE: Armour stays at home - it's never carried by soldiers (don't call removeForEachSoldier)
+	// Get defender consumables
+	let defenderConsumables = (await pool.promise().query('SELECT * FROM equipment WHERE accountId = ? AND type = "Consumable";', [defenderId]))[0];
 
-						//weapons
-						let query = 'SELECT * FROM equipment WHERE accountId = ? AND type = "Weapon";';
-						connection.query(query, [defenderId], (err, results) => {
-							if (err) throw err;
+	// Steal consumables
+	let consumableResults = removeForEachSoldier(defenderConsumables, soldierCount);
 
-							removeForEachSoldier(results, soldierCount, (err, weaponResults) => {
-								if (err) throw err;
+	//splice the two arrays back together
+	// TODO: Something is fishy here. Don't understand
+	let results = weaponResults.concat(consumableResults, defenderArmour);
 
-								//consumables
-								let query = 'SELECT * FROM equipment WHERE accountId = ? AND type = "Consumable";';
-								connection.query(query, [defenderId], (err, results) => {
-									if (err) throw err;
-
-									removeForEachSoldier(results, soldierCount, (err, consumableResults) => {
-										if (err) throw err;
-
-										//splice the two arrays back together
-										let results = weaponResults.concat(consumableResults, armourResults);
-
-										spyStealEquipmentSelectItemsToSteal(connection, attackerId, defenderId, attackingUnits, results, pastSpyingId);
-									});
-								});
-							});
-						});
-					});
-				});
-			});
-		});
-	});
+	spyStealEquipmentSelectItemsToSteal(attackerId, defenderId, attackingUnits, results, pastSpyingId);
 };
 
 const removeForEachSoldier = (results, soldiers, cb) => {
-	getEquipmentStatistics((err, { statistics }) => {
+	getEquipmentStatistics((err, {
+		statistics
+	}) => {
 		if (err) throw err;
 
 		results.sort((a, b) => statistics[a.type][a.name].combatBoost < statistics[b.type][b.name].combatBoost);
@@ -374,7 +317,15 @@ const removeForEachSoldier = (results, soldiers, cb) => {
 	});
 }
 
-const spyStealEquipmentSelectItemsToSteal = (connection, attackerId, defenderId, attackingUnits, results, pastSpyingId) => {
+/**
+ * 
+ * @param {*} attackerId 
+ * @param {*} defenderId 
+ * @param {*} attackingUnits 
+ * @param {*} results 
+ * @param {*} pastSpyingId 
+ */
+const spyStealEquipmentSelectItemsToSteal = async (attackerId, defenderId, attackingUnits, results, pastSpyingId) => {
 	//count the total items
 	let totalItems = 0;
 	results.forEach((item) => totalItems += item.quantity);
@@ -424,7 +375,9 @@ const spyStealEquipmentSelectItemsToSteal = (connection, attackerId, defenderId,
 
 	items.forEach((item) => {
 		if (!collapsedItems[item.id]) {
-			collapsedItems[item.id] = { ...item };
+			collapsedItems[item.id] = {
+				...item
+			};
 		} else {
 			collapsedItems[item.id].quantity += item.quantity;
 		}
@@ -437,19 +390,19 @@ const spyStealEquipmentSelectItemsToSteal = (connection, attackerId, defenderId,
 	});
 
 	//next steps
-	spyStealEquipmentIncrementItemsToInventory(connection, attackerId, items);
-	spyStealEquipmentDecrementItemsFromInventory(connection, defenderId, items);
-	recordEquipmentStolen(connection, items, pastSpyingId);
+	spyStealEquipmentIncrementItemsToInventory(attackerId, items);
+	spyStealEquipmentDecrementItemsFromInventory(defenderId, items);
+	recordEquipmentStolen(items, pastSpyingId);
 	if (items.length) {
-		updateSuccessStatus(connection, 'success', pastSpyingId); //QOL improvement
+		updateSuccessStatus('success', pastSpyingId); //QOL improvement
 	}
 };
 
-const spyStealEquipmentIncrementItemsToInventory = (connection, accountId, items) => {
+const spyStealEquipmentIncrementItemsToInventory = (accountId, items) => {
 	//add the items to the players's inventory
 	items.forEach((item) => {
 		let query = 'SELECT * FROM equipment WHERE accountId = ? AND name = ? AND type = ?;';
-		connection.query(query, [accountId, item.name, item.type], (err, results) => {
+		pool.query(query, [accountId, item.name, item.type], (err, results) => {
 			if (err) throw err;
 
 			let query;
@@ -461,7 +414,7 @@ const spyStealEquipmentIncrementItemsToInventory = (connection, accountId, items
 				query = 'INSERT INTO equipment (quantity, accountId, name, type) VALUES (?, ?, ?, ?);';
 			}
 
-			connection.query(query, [item.quantity, accountId, item.name, item.type], (err) => {
+			pool.query(query, [item.quantity, accountId, item.name, item.type], (err) => {
 				if (err) throw err;
 			});
 		});
@@ -470,7 +423,7 @@ const spyStealEquipmentIncrementItemsToInventory = (connection, accountId, items
 	//error checking
 	items.forEach((item) => {
 		let query = 'SELECT * FROM equipment WHERE accountId = ? AND name = ? AND type = ?;';
-		connection.query(query, [accountId, item.name, item.type], (err, results) => {
+		pool.query(query, [accountId, item.name, item.type], (err, results) => {
 			if (err) throw err;
 
 			if (results.length > 1) {
@@ -480,18 +433,18 @@ const spyStealEquipmentIncrementItemsToInventory = (connection, accountId, items
 	});
 };
 
-const spyStealEquipmentDecrementItemsFromInventory = (connection, accountId, items) => {
+const spyStealEquipmentDecrementItemsFromInventory = (accountId, items) => {
 	//remove these items from the player's inventory
 	items.forEach((item) => {
 		let query = 'UPDATE equipment SET quantity = quantity - ? WHERE accountId = ? AND id = ?;';
-		connection.query(query, [item.quantity, accountId, item.id], (err) => {
+		pool.query(query, [item.quantity, accountId, item.id], (err) => {
 			if (err) throw err;
 		});
 	});
 
 	//check to see if any quantities are negative
 	let query = 'SELECT * FROM equipment WHERE quantity < 0;';
-	connection.query(query, (err, results) => {
+	pool.query(query, (err, results) => {
 		if (err) throw err;
 
 		if (results.length !== 0) {
@@ -501,18 +454,18 @@ const spyStealEquipmentDecrementItemsFromInventory = (connection, accountId, ite
 
 	//clean the database from quantities of 0
 	query = 'DELETE FROM equipment WHERE accountId = ? AND quantity = 0;';
-	connection.query(query, [accountId], (err) => {
+	pool.query(query, [accountId], (err) => {
 		if (err) throw err;
 
 		log('Cleaned database', 'equipment decrement');
 	});
 };
 
-const recordEquipmentStolen = (connection, items, pastSpyingId) => {
+const recordEquipmentStolen = (items, pastSpyingId) => {
 	//record in the database
 	let query = 'INSERT INTO equipmentStolen (pastSpyingId, name, type, quantity) VALUES (?, ?, ?, ?);';
 	items.forEach((item) => {
-		connection.query(query, [pastSpyingId, item.name, item.type, item.quantity], (err) => {
+		pool.query(query, [pastSpyingId, item.name, item.type, item.quantity], (err) => {
 			if (err) throw err;
 
 			log('Items stolen', pastSpyingId, JSON.stringify(item));
@@ -520,9 +473,9 @@ const recordEquipmentStolen = (connection, items, pastSpyingId) => {
 	});
 };
 
-const updateSuccessStatus = (connection, status, pastSpyingId) => {
+const updateSuccessStatus = (status, pastSpyingId) => {
 	let query = 'UPDATE pastSpying SET success = ? WHERE id = ?;';
-	connection.query(query, [status, pastSpyingId], (err) => {
+	pool.query(query, [status, pastSpyingId], (err) => {
 		if (err) throw err;
 	});
 }

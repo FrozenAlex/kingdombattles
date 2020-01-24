@@ -24,16 +24,7 @@ let {
 } = require('./badges.js');
 
 const attackRequest = (req, res) => {
-	//verify the attacker's credentials (only the attacker can launch an attack)
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;';
-	pool.query(query, [req.body.id, req.body.attacker, req.body.token], (err, results) => {
-		if (err) throw err;
-
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid attack credentials', req.body.id, req.body.attacker, req.body.defender, req.body.token));
-			res.end();
-			return;
-		}
+	let attacker = req.session.user;
 
 		//verify that the defender's profile exists
 		let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);';
@@ -62,7 +53,7 @@ const attackRequest = (req, res) => {
 				let attackingUnits = results[0].soldiers;
 
 				//verify that the attacker is not already attacking someone
-				isAttacking(connection, req.body.attacker, (err, attacking) => {
+				isAttacking(req.body.attacker, (err, attacking) => {
 					if (err) throw err;
 
 					if (attacking) {
@@ -89,7 +80,6 @@ const attackRequest = (req, res) => {
 				});
 			});
 		});
-	});
 };
 
 const attackStatusRequest = (connection) => (req, res) => {

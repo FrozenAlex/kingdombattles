@@ -17,15 +17,6 @@ let {
 } = require('./../utilities.js');
 
 const ownedRequest = async (req, res) => {
-	//validate the credentials
-	let credentials = (await pool.promise().query('SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;', [req.body.id, req.body.token]))[0]
-
-	if (credentials[0].total !== 1) {
-		res.status(400).write(log('Invalid badges owned credentials', JSON.stringify(req.body), req.body.id, req.body.token));
-		res.end();
-		return;
-	}
-
 	// get user badges
 	let badgesOwned = await getBadgesOwned(req.body.id)
 
@@ -39,17 +30,11 @@ const ownedRequest = async (req, res) => {
 
 
 const selectActiveBadge = async (req, res) => {
-	//validate the credentials
-	let credentials = (await pool.promise().query('SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;', [req.body.id, req.body.token]))[0]
 
-	if (credentials[0].total !== 1) {
-		res.status(400).write(log('Invalid active badge select credentials', req.body.id, req.body.token));
-		res.end();
-		return;
-	}
+	let user = req.session.user;
 
 	//check to see if the player owns this badge
-	let ownedBadges = await getBadgesOwned(req.body.id)
+	let ownedBadges = await getBadgesOwned(user.id)
 
 	if (req.body.name !== null && !ownedBadges[req.body.name]) {
 		res.status(400).write('You don\'t own that badge');
@@ -65,18 +50,18 @@ const selectActiveBadge = async (req, res) => {
 	}
 
 	//zero out the user's selection
-	await pool.promise().query('UPDATE badges SET active = FALSE WHERE accountId = ?;', [req.body.id])
+	await pool.promise().query('UPDATE badges SET active = FALSE WHERE accountId = ?;', [user.id])
 
 	//update the user's selection
-	await pool.promise().query('UPDATE badges SET active = TRUE WHERE accountId = ? AND name = ?;', [req.body.id, req.body.name])
+	await pool.promise().query('UPDATE badges SET active = TRUE WHERE accountId = ? AND name = ?;', [user.id, req.body.name])
 
 	// Send modified selection to the user
-	ownedBadges = await getBadgesOwned(req.body.id)
+	ownedBadges = await getBadgesOwned(user.id)
 	res.status(200).json(ownedBadges);
 	res.end();
 
-	log('Updated badge selection', req.body.id, req.body.name);
-	logActivity(req.body.id);
+	log('Updated badge selection', user.id, req.body.name);
+	logActivity(user.id);
 };
 
 /**
