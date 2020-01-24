@@ -34,10 +34,15 @@ module.exports = function (session) {
         }
 
         get(sid, cb = noop) {
-            let key = this.prefix + sid
-            this.client.query("select session from sessions where sid = ?;", [key], (err, data, fields) => {
+            this.client.query("select expires,session from sessions where sid = ?;", [sid], (err, data, fields) => {
                 if (err) return cb(err)
-                if (data.length == 0) return cb()
+                if (data.length == 0) return cb(null, null)
+
+                var now = Math.round(Date.now() / 1000);
+                if (data[0].expires < now) {
+                    // Session has expired.
+                    return cb(null, null);
+                }
 
                 let result
                 try {
@@ -45,13 +50,13 @@ module.exports = function (session) {
                 } catch (err) {
                     return cb(err)
                 }
+
+                if(data[0].expires)
                 return cb(null, result)
             })
         }
 
         set(sid, sess, cb = noop) {
-            // Session id
-            let args = [this.prefix + sid]
 
             //  Session serialisation
             let value
@@ -75,7 +80,7 @@ module.exports = function (session) {
 
             this.client.query(
                 "REPLACE INTO sessions (sid, session, accountId, expires) VALUES (?,?,?,?);",
-                [args, value, userid, expires], (err, data, fields) => {
+                [sid, value, userid, expires], (err, data, fields) => {
                     if (err) cb(err)
                     else {
                         cb();
@@ -86,17 +91,19 @@ module.exports = function (session) {
         touch(sid, sess, cb = noop) {
             if (this.disableTouch) return cb()
 
-            let key = this.prefix + sid
-            this.client.expire(key, this._getTTL(sess), (err, ret) => {
-                if (err) return cb(err)
-                if (ret !== 1) return cb(null, 'EXPIRED')
-                cb(null, 'OK')
+            var expires = this._getTTL(sess);
+            this.client.query("UPDATE sessions SET expires = ? WHERE sid = ?", [expires,sid], (err, data)=>{
+                if (err) return cb(err);
+                cb() // Success;
             })
+
         }
 
         destroy(sid, cb = noop) {
-            let key = this.prefix + sid
-            this.client.query("delete from sessions where sid=?; ", [sid])
+            this.client.query("delete from sessions where sid=?; ", [sid], (err, data)=>{
+                if (err) return cb(err)
+                cb()
+            })
         }
 
         // Removes everything from the store
@@ -111,10 +118,12 @@ module.exports = function (session) {
         }
 
         length(cb = noop) {
-            this.client.query("select")
-            this._getAllKeys((err, keys) => {
-                if (err) return cb(err)
-                return cb(null, keys.length)
+            this.client.query("SELECT COUNT(*) as count FROM sessions", (err, data) => {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(null, (data[0].count));
+                }
             })
         }
 
@@ -128,40 +137,48 @@ module.exports = function (session) {
             })
         }
 
+
         all(cb = noop) {
-            let prefixLen = this.prefix.length
+            let now = new Date(Date.now());
 
-            this._getAllKeys((err, keys) => {
-                if (err) return cb(err)
-                if (keys.length === 0) return cb(null, [])
+            // Get all not expired sessions
+            this.client.query("select sid,  from sessions where expires > ?", [now], (err, data, fields) => {
+                if (err) return cb(err);
 
-                this.client.mget(keys, (err, sessions) => {
-                    if (err) return cb(err)
+                let result;
+                try {
+                    result = data.map(function (row) {
+                        return {
+                            id: row.sid,
+                            data: this.serializer.parse(row.session),
+                        }
+                    })
 
-                    let result
-                    try {
-                        result = sessions.map((data, index) => {
-                            data = this.serializer.parse(data)
-                            data.id = keys[index].substr(prefixLen)
-                            return data
-                        })
-                    } catch (e) {
-                        err = e
-                    }
-                    return cb(err, result)
-                })
+                } catch (e) {
+                    err = e;
+                }
+                cb(err, result)
             })
         }
 
         // Get expiration date
         _getTTL(sess) {
-            let ttl
+            let expires;
+
             if (sess && sess.cookie && sess.cookie.expires) {
-                expires = new Date((Date.now() + sess.cookie.expires))
+                expires = sess.cookie.expires
             } else {
-                ttl = new Date(Date.now() + this.ttl)
+                expires = new Date(Date.now() + this.ttl)
             }
-            return ttl
+
+            if (!(expires instanceof Date)) {
+                expires = new Date(expires);
+            }
+    
+            // Use whole seconds here; not milliseconds.
+            expires = Math.round(expires.getTime() / 1000);
+
+            return expires
         }
 
         _getAllKeys(cb = noop) {

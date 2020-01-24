@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 
 import { logout } from '../../actions/account.js';
+import Axios from 'axios';
 
 class Logout extends React.Component {
 	constructor(props) {
@@ -19,13 +20,11 @@ class Logout extends React.Component {
 		);
 	}
 
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
+	async sendRequest(url, args = {}) { //send a unified request, using my credentials
 		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('GET', url, true);
-		xhr.send();
-
-		//Don't wait for a response
+		let response = await Axios.get('/api/account/logout')
+	
+		// Wait for a response to invalidate sessions
 		this.props.logout();
 
 		if (this.props.onClick) {

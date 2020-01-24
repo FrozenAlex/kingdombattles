@@ -107,7 +107,7 @@ async function signupRequest(req, res) {
 	//TODO: make the verification email prettier
 
 	//build the verification email
-	let addr = `http://${process.env.WEB_ADDRESS}/api/account/verify?email=${fields.email}&verify=${rand}`;
+	let addr = `https://${process.env.WEB_ADDRESS}/api/account/verify?email=${fields.email}&verify=${rand}`;
 	let msg = 'Hello! Please visit the following address to verify your account: ';
 	// TODO: Don't log adresses to console
 	console.log(addr);
@@ -330,7 +330,7 @@ async function passwordRecoverRequest(req, res) {
 	results = (await pool.promise().query('REPLACE INTO passwordRecover (accountId, token) VALUES (?, ?)', [results[0].id, rand]))[0]
 	//TODO: prettier recovery email
 	//build the recovery email
-	let addr = `http://${process.env.WEB_ADDRESS}/passwordreset?email=${fields.email}&token=${rand}`;
+	let addr = `https://${process.env.WEB_ADDRESS}/passwordreset?email=${fields.email}&token=${rand}`;
 	let msg = 'Hello! Please visit the following address to set a new password (if you didn\'t request a password recovery, ignore this email): ';
 
 	//BUGFIX: is gmail being cruel?

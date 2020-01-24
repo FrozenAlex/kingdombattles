@@ -15,6 +15,14 @@ let pool = require("./db/pool");
 
 let MyStore = require('./util/sessionStore')(expressSession)
 
+app.use(compression({
+	level: 6
+}))
+
+// Temporary stuff
+app.use('/content/', express.static(path.resolve(__dirname + '/../public/content/')) );
+app.use('/', express.static(path.resolve(__dirname + '/../dist/')) );
+
 // Use a session for each client
 app.use(
 	expressSession({
@@ -23,9 +31,13 @@ app.use(
 	  resave: true,
 	  cookie: {
 		httpOnly: false,
-		secure: false,
+		secure: (process.env.NODE_ENV !== "development"),
+		sameSite: true,
+		maxAge: 30*24*60*60*1000 // 30 Days 
 	  },
-	  store: new MyStore({client: pool})
+	  store: new MyStore({client: pool}),
+	  rolling: true,
+	  saveUninitialized: false // Don't save not logged in cookies
 	}),
   );
 
@@ -33,13 +45,7 @@ app.use(
 let { log } = require('../common/utilities.js');
 let { replacement, stringReplacement } = require('../common/replacement.js');
 
-app.use(compression({
-	level: 6
-}))
 
-// Temporary stuff
-app.use('/content/', express.static(path.resolve(__dirname + '/../public/content/')) );
-app.use('/', express.static(path.resolve(__dirname + '/../dist/')) );
 
 app.use(bodyParser.json());
 

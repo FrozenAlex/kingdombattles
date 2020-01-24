@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS sessions (
 	sid varchar(255) NOT NULL PRIMARY KEY,
-	session varchar(255) NOT NULL,
-	expires datetime NOT NULL,
+	session TEXT NOT NULL,
+	expires BIGINT UNSIGNED NOT NULL,
 	accountId INTEGER UNSIGNED,
 	CONSTRAINT FOREIGN KEY fk_accountId(accountId) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
