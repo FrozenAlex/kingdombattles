@@ -280,19 +280,18 @@ async function passwordChangeRequest(req, res) {
 
 	// TODO: clear all session data for this user (a 'feature')
 	// await pool.promise().query('DELETE FROM sessions WHERE sessions.accountId = ?;', [fields.id])
-	// let rand = Math.floor(Math.random() * 2000000000);
+	//let rand = Math.floor(Math.random() * 2000000000);
 
 
 	// await pool.promise().query('INSERT INTO sessions (accountId, token) VALUES (?, ?);', [fields.id, rand])
 	// TODO: update session on completion
 	//send json containing the account info
 	res.status(200).json({
-		token: rand,
-		msg: log('Password changed!', fields.id)
+		msg: log('Password changed!', user.id)
 	});
 	res.end();
 
-	logActivity(fields.id);
+	logActivity(user.id);
 };
 
 async function passwordRecoverRequest(req, res) {
