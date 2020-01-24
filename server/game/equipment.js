@@ -28,7 +28,9 @@ async function equipmentRequest(req, res) {
 		let ownedObj = await getEquipmentOwned(user.id)
 
 		//finally, compose the resulting objects
-		res.status(200).json(Object.assign({}, statisticsObj, ownedObj));
+		res.status(200).json(Object.assign({}, statisticsObj, {
+			"owned": ownedObj
+		}));
 		res.end();
 	}
 
@@ -41,7 +43,9 @@ async function equipmentRequest(req, res) {
 
 		case 'owned':
 			let ownedObj = await getEquipmentOwned(user.id)
-			res.status(200).json(ownedObj);
+			res.status(200).json({
+				"owned": ownedObj
+			});
 			res.end();
 
 		default:
@@ -51,130 +55,95 @@ async function equipmentRequest(req, res) {
 };
 
 async function purchaseRequest(req, res) {
-	//validate the credentials
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	pool.query(query, [req.body.id, req.body.token], (err, credentials) => {
-		if (err) throw err;
+	// User is stored in session
+	let user = req.session.user;
 
-		if (credentials[0].total !== 1) {
-			res.status(400).write(log('Invalid equipment purchase credentials', JSON.stringify(body), body.id, body.token));
-			res.end();
-			return;
-		}
+	//no purchasing if you're attacking
+	let attacking = await isAttacking(user.id);
+	if (attacking) {
+		res.status(400).write(log('Can\'t purchase while attacking', ruser.id, req.body.token));
+		res.end();
+		return;
+	}
+	let spying = isSpying(user.id);
+	if (spying) {
+		res.status(400).write(log('Can\'t purchase while spying', req.body.id, req.body.token));
+		res.end();
+		return;
+	}
 
-		//no purchasing if you're attacking
-		isAttacking(connection, req.body.id, (err, attacking) => {
-			if (err) throw err;
+	//get the player's gold
+	let playergold = (await pool.promise().query('SELECT gold, scientists FROM profiles WHERE accountId = ?;', [req.body.id]))[0]
 
-			if (attacking) {
-				res.status(400).write(log('Can\'t purchase while attacking', req.body.id, req.body.token, req.body.type, req.body.name));
-				res.end();
-				return;
-			}
+	//get the stats for all objects
+	let statistics = getEquipmentStatistics()
 
-			isSpying(connection, req.body.id, (err, spying) => {
-				if (err) throw err;
+	//valid parameters
+	if (!statistics[req.body.type] || !statistics[req.body.type][req.body.name]) {
+		res.status(400).write(log('Invalid equipment purchase parameters', req.body.id, req.body.token, req.body.type, req.body.name));
+		res.end();
+		return;
+	}
 
-				if (spying) {
-					res.status(400).write(log('Can\'t purchase while spying', req.body.id, req.body.token, req.body.type, req.body.name));
-					res.end();
-					return;
-				}
+	//enough gold?
+	if (playergold[0].gold < statistics[req.body.type][req.body.name].cost) {
+		res.status(400).write(log('Not enough gold', req.body.id, req.body.token, req.body.type, req.body.name));
+		res.end();
+		return;
+	}
 
-				//get the player's gold
-				let query = 'SELECT gold, scientists FROM profiles WHERE accountId = ?;';
-				pool.query(query, [req.body.id], (err, results) => {
-					if (err) throw err;
+	//for sale?
+	if (!statistics[req.body.type][req.body.name].visible || !statistics[req.body.type][req.body.name].purchasable) {
+		res.status(400).write(log('Item not for sale', req.body.id, req.body.type, req.body.name));
+		res.end();
+		return;
+	}
 
-					//just in case
-					if (results.length === 0) {
-						res.status(400).write(log('Purchase made on unrecognized account', req.body.id, req.body.token));
-						res.end();
-						return;
-					}
+	//high enough level?
+	if (playergold[0].scientists < statistics[req.body.type][req.body.name].scientistsRequired) {
+		res.status(400).write(log('Not enough scientists', req.body.id, req.body.type, req.body.name));
+		res.end();
+		return;
+	}
 
-					//get the stats for all objects
-					getEquipmentStatistics((err, {
-						statistics
-					}) => {
-						if (err) throw err;
+	//purchase approved.
 
-						//valid parameters
-						if (!statistics[req.body.type] || !statistics[req.body.type][req.body.name]) {
-							res.status(400).write(log('Invalid equipment purchase parameters', req.body.id, req.body.token, req.body.type, req.body.name));
-							res.end();
-							return;
-						}
+	//get the user's current item data (including quantity)
+	let playerItems = (await pool.promise().query(
+		'SELECT * FROM equipment WHERE accountId = ? AND name = ?;',
+		[req.body.id, req.body.name]))[0]
 
-						//enough gold?
-						if (results[0].gold < statistics[req.body.type][req.body.name].cost) {
-							res.status(400).write(log('Not enough gold', req.body.id, req.body.token, req.body.type, req.body.name));
-							res.end();
-							return;
-						}
+	//add to or update the record
+	let query;
+	if (playerItems.length > 0) {
+		query = 'UPDATE equipment SET quantity = quantity + 1 WHERE accountId = ? AND name = ? AND type = ?;';
+	} else {
+		query = 'INSERT INTO equipment (accountId, name, type, quantity) VALUES (?, ?, ?, 1);';
+	}
 
-						//for sale?
-						if (!statistics[req.body.type][req.body.name].visible || !statistics[req.body.type][req.body.name].purchasable) {
-							res.status(400).write(log('Item not for sale', req.body.id, req.body.token, req.body.type, req.body.name));
-							res.end();
-							return;
-						}
+	await pool.promise().query(query, [req.body.id, req.body.name, req.body.type])
 
-						//high enough level?
-						if (results[0].scientists < statistics[req.body.type][req.body.name].scientistsRequired) {
-							res.status(400).write(log('Not enough scientists', req.body.id, req.body.token, req.body.type, req.body.name));
-							res.end();
-							return;
-						}
+	//remove gold from the user's account
+	await pool.promise().query('UPDATE profiles SET gold = gold - ? WHERE accountId = ?;', [statistics[req.body.type][req.body.name].cost, req.body.id])
 
-						//purchase approved.
+	//return the new owned data
+	let ownedEquipment = await getEquipmentOwned(req.body.id)
 
-						//get the user's current item data (including quantity)
-						let query = 'SELECT * FROM equipment WHERE accountId = ? AND name = ?;';
-						pool.query(query, [req.body.id, req.body.name], (err, results) => {
-							if (err) throw err;
+	res.status(200).json({
+		owned: ownedEquipment
+	}); //TODO: Why is assign here?
+	res.end();
 
-							//add to or update the record
-							let query;
-							if (results.length > 0) {
-								query = 'UPDATE equipment SET quantity = quantity + 1 WHERE accountId = ? AND name = ? AND type = ?;';
-							} else {
-								query = 'INSERT INTO equipment (accountId, name, type, quantity) VALUES (?, ?, ?, 1);';
-							}
+	log('Purchase made', req.body.id, req.body.token, req.body.type, req.body.name);
 
-							pool.query(query, [req.body.id, req.body.name, req.body.type], (err) => {
-								if (err) throw err;
+	logActivity(req.body.id);
 
-								//remove gold from the user's account
-								let query = 'UPDATE profiles SET gold = gold - ? WHERE accountId = ?;';
-								pool.query(query, [statistics[req.body.type][req.body.name].cost, req.body.id], (err) => {
-									if (err) throw err;
 
-									//return the new owned data
-									getEquipmentOwned(connection, req.body.id, (err, results) => {
-										if (err) throw err;
-
-										res.status(200).json(Object.assign(results)); //TODO: Why is assign here?
-										res.end();
-
-										log('Purchase made', req.body.id, req.body.token, req.body.type, req.body.name);
-
-										logActivity(req.body.id);
-									});
-								});
-							});
-						});
-					});
-				});
-			});
-		});
-	});
 }
 
 async function sellRequest(req, res) {
 	//validate the credentials
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	pool.query(query, [req.body.id, req.body.token], (err, credentials) => {
+	pool.query('SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;', [req.body.id, req.body.token], (err, credentials) => {
 		if (err) throw err;
 
 		if (credentials[0].total !== 1) {
@@ -203,8 +172,7 @@ async function sellRequest(req, res) {
 				}
 
 				//get the player's item quantity
-				let query = 'SELECT * FROM equipment WHERE accountId = ? AND type = ? AND name = ?;';
-				pool.query(query, [req.body.id, req.body.type, req.body.name], (err, results) => {
+				pool.query('SELECT * FROM equipment WHERE accountId = ? AND type = ? AND name = ?;', [req.body.id, req.body.type, req.body.name],async  (err, results) => {
 					if (err) throw err;
 
 					if (results.length === 0) {
@@ -214,63 +182,48 @@ async function sellRequest(req, res) {
 					}
 
 					//get the stats for all objects
-					getEquipmentStatistics((err, {
-						statistics
-					}) => {
-						if (err) throw err;
+					let statistics = getEquipmentStatistics()
+					//valid parameters
+					if (!statistics[req.body.type] || !statistics[req.body.type][req.body.name]) {
+						res.status(400).write(log('Invalid equipment sell parameters', req.body.id, req.body.token, req.body.type, req.body.name));
+						res.end();
+						return;
+					}
 
-						//valid parameters
-						if (!statistics[req.body.type] || !statistics[req.body.type][req.body.name]) {
-							res.status(400).write(log('Invalid equipment sell parameters', req.body.id, req.body.token, req.body.type, req.body.name));
-							res.end();
-							return;
-						}
+					//for sale?
+					if (!statistics[req.body.type][req.body.name].saleable) {
+						res.status(400).write(log('Item can\'t be sold', req.body.id, req.body.token, req.body.type, req.body.name));
+						res.end();
+						return;
+					}
 
-						//for sale?
-						if (!statistics[req.body.type][req.body.name].saleable) {
-							res.status(400).write(log('Item can\'t be sold', req.body.id, req.body.token, req.body.type, req.body.name));
-							res.end();
-							return;
-						}
+					//sale approved.
 
-						//sale approved.
+					//add gold to the user's account
+					await pool.promise().query('UPDATE profiles SET gold = gold + ? WHERE accountId = ?;', [Math.floor(statistics[req.body.type][req.body.name].cost / 2), req.body.id])
 
-						//add gold to the user's account
-						let query = 'UPDATE profiles SET gold = gold + ? WHERE accountId = ?;';
-						pool.query(query, [Math.floor(statistics[req.body.type][req.body.name].cost / 2), req.body.id], (err) => {
-							if (err) throw err;
+					//remove the item from the inventory
+					await pool.promise().query('UPDATE equipment SET quantity = quantity - 1 WHERE id = ?;', [results[0].id])
 
-							//remove the item from the inventory
-							let query = 'UPDATE equipment SET quantity = quantity - 1 WHERE id = ?;';
-							pool.query(query, [results[0].id], (err) => {
-								if (err) throw err;
+					//return the new owned data
+					let ownedEquipment = await getEquipmentOwned(req.body.id)
 
-								//return the new owned data
-								getEquipmentOwned(connection, req.body.id, (err, results) => {
-									if (err) throw err;
+					res.status(200).json(Object.assign(ownedEquipment));
+					res.end();
 
-									res.status(200).json(Object.assign(results));
-									res.end();
+					log('Sale made', req.body.id, req.body.token, req.body.type, req.body.name);
 
-									log('Sale made', req.body.id, req.body.token, req.body.type, req.body.name);
+					//Extra: clean the database
+					await pool.promise().query('DELETE FROM equipment WHERE quantity <= 0;')
 
-									//Extra: clean the database
-									let query = 'DELETE FROM equipment WHERE quantity <= 0;';
-									pool.query(query, (err) => {
-										if (err) throw err;
+					log('Cleaned database', 'equipment sale');
 
-										log('Cleaned database', 'equipment sale');
-
-										logActivity(req.body.id);
-									});
-								});
-							});
-						});
-					});
+					logActivity(req.body.id);
 				});
 			});
 		});
 	});
+
 }
 
 module.exports = {

@@ -71,8 +71,7 @@ const selectActiveBadge = async (req, res) => {
  */
 const rewardBadge = async (id, badgeName) => {
 	//TODO: constants as badge/equipment names?
-	let query = 'INSERT INTO badges (accountId, name) SELECT ?, ? FROM DUAL WHERE NOT EXISTS(SELECT 1 FROM badges WHERE accountId = ? AND name = ?);';
-	let packet = (await pool.promise().query(query, [id, badgeName, id, badgeName]))[0]
+		let packet = (await pool.promise().query('INSERT INTO badges (accountId, name) SELECT ?, ? FROM DUAL WHERE NOT EXISTS(SELECT 1 FROM badges WHERE accountId = ? AND name = ?);', [id, badgeName, id, badgeName]))[0]
 	if (packet.affectedRows) {
 		return true
 	} else {
@@ -102,19 +101,17 @@ const captureTheFlag = async (attackerId, defenderId, skip) => {
 	}
 
 	//move the badge between accounts
-	let query = 'INSERT INTO badges (id, accountId, name, active) VALUES (?, ?, "Capture The Flag", FALSE) ON DUPLICATE KEY UPDATE accountId = VALUES(accountId), active = FALSE;';
-	await pool.promise().query(query, [results[0].id, attackerId])
+		await pool.promise().query('INSERT INTO badges (id, accountId, name, active) VALUES (?, ?, "Capture The Flag", FALSE) ON DUPLICATE KEY UPDATE accountId = VALUES(accountId), active = FALSE;', [results[0].id, attackerId])
 
 	log('Badge moved', attackerId, defenderId);
 	return true
 };
 
-const runBadgeTicks = () => {
+function runBadgeTicks() {
 	//Combat Master
 	let combatMasterBadgeTickJob = new CronJob('0 * * * * *', async () => { //once a minute - combats aren't that fast
 		//gather the total combats
-		let query = 'SELECT * FROM (SELECT attackerId, COUNT(attackerId) AS successfulAttacks FROM pastCombat WHERE victor = "attacker" GROUP BY attackerId ORDER BY attackerId) AS t WHERE successfulAttacks >= 100;';
-		let results = (await pool.promise().query(query))[0]
+				let results = (await pool.promise().query('SELECT * FROM (SELECT attackerId, COUNT(attackerId) AS successfulAttacks FROM pastCombat WHERE victor = "attacker" GROUP BY attackerId ORDER BY attackerId) AS t WHERE successfulAttacks >= 100;'))[0]
 
 		for (let i = 0; i < results.length; i++) {
 			let result = await rewardBadge(results[i].attackerId, 'Combat Master');
@@ -127,7 +124,7 @@ const runBadgeTicks = () => {
 	combatMasterBadgeTickJob.start();
 
 	//King Of The Hill
-	let kingOfTheHillBadgeTickJob = new CronJob('0 * * * * *', () => { //once a minute
+	let kingOfTheHillBadgeTickJob = new CronJob('0 * * * * *', async () => { //once a minute
 		//NOTE: sloppy implementation - people who have the badge may get "rewarded" twice. Thankfully rewardBadge() prevents this.
 		getLadderData('parameter not used (yet)', 0, 1, (err, ladderResults) => {
 			if (err) throw err; //TODO: pull badge names into variables. Not good.
@@ -139,8 +136,7 @@ const runBadgeTicks = () => {
 			}
 
 			//get the current contender for king of the hill
-			let query = 'SELECT * FROM badgesTimespan WHERE name = "King Of The Hill";';
-			pool.query(query, (err, results) => {
+						pool.query('SELECT * FROM badgesTimespan WHERE name = "King Of The Hill";', async (err, results) => {
 				if (err) throw err;
 
 				const day = 1000 * 60 * 60 * 24; //milliseconds
@@ -150,10 +146,7 @@ const runBadgeTicks = () => {
 				//if someone qualifies (1 day)
 				if (results.length > 0 && now - qualifyTime >= day) {
 					rewardBadge(results[0].accountId, results[0].name);
-					let query = 'DELETE FROM badgesTimespan WHERE id = ?;';
-					pool.query(query, [results[0].id], (err) => {
-						if (err) throw err;
-					});
+										await pool.promise().query('DELETE FROM badgesTimespan WHERE id = ?;', [results[0].id])
 					return;
 				}
 
@@ -165,17 +158,12 @@ const runBadgeTicks = () => {
 
 				//if the current contender is NOT in first place
 				else {
-					let query = 'DELETE FROM badgesTimespan WHERE name = "King Of The Hill";';
-					pool.query(query, (err) => {
-						if (err) throw err;
 
-						let query = 'INSERT INTO badgesTimespan (accountId, name) VALUES (?, "King Of The Hill")';
-						pool.query(query, [ladderResults[0].id], (err) => {
-							if (err) throw err;
+					await pool.promise().query('DELETE FROM badgesTimespan WHERE name = "King Of The Hill";')
 
-							log('King Of The Hill contender updated', ladderResults[0].id, ladderResults[0].username);
-						});
-					});
+					await pool.promise().query('INSERT INTO badgesTimespan (accountId, name) VALUES (?, "King Of The Hill")', [ladderResults[0].id])
+
+					log('King Of The Hill contender updated', ladderResults[0].id, ladderResults[0].username);
 				}
 			});
 		});

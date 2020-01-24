@@ -19,8 +19,7 @@ let {
  */
 async function createProfile(username) {
     // Check if the profile exists
-    let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT accounts.id FROM accounts WHERE username = ?);';
-    let accounts = (await pool.promise().query(query, [username]))[0]
+    let accounts = (await pool.promise().query('SELECT accountId FROM profiles WHERE accountId IN (SELECT accounts.id FROM accounts WHERE username = ?);', [username]))[0]
 
     if (accounts.length === 1) {
         return false

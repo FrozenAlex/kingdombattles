@@ -21,15 +21,14 @@ let {
 
 const pool = require('./../db/pool.js');
 
-const spyRequest = (req, res) => {
+function spyRequest(req, res) {
 	/// Attacker = username
 	/// id - user id
 	// 
 	let user = req.session.user;
 
 	//verify that the defender's profile exists
-	let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);';
-	pool.query(query, [req.body.defender], (err, results) => {
+	pool.query('SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);', [req.body.defender], (err, results) => {
 		if (err) throw err;
 
 		if (results.length !== 1) {
@@ -41,8 +40,7 @@ const spyRequest = (req, res) => {
 		let defenderId = results[0].accountId;
 
 		//verify that the attacker has enough spies
-		let query = 'SELECT spies FROM profiles WHERE accountId = ?;';
-		pool.query(query, [user.id], async (err, results) => {
+		pool.query('SELECT spies FROM profiles WHERE accountId = ?;', [user.id], async (err, results) => {
 			if (err) throw err;
 
 			if (results[0].spies <= 0) {
@@ -62,22 +60,19 @@ const spyRequest = (req, res) => {
 			}
 
 			//create the pending spy record
-			let query = 'INSERT INTO pendingSpying (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 10 * ? MINUTE), ?, ?, ?);';
-			pool.query(query, [attackingUnits, user.id, defenderId, attackingUnits], (err) => {
-				if (err) throw err;
+			await pool.promise().query('INSERT INTO pendingSpying (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 10 * ? MINUTE), ?, ?, ?);', [attackingUnits, user.id, defenderId, attackingUnits])
 
-				res.status(200).json({
-					status: 'spying',
-					attacker: user.username,
-					defender: req.body.defender,
-					msg: log('Spying', user.username, req.body.defender) //TODO: am I using this msg parameter anywhere?
-				});
-				res.end();
-
-				logActivity(user.id);
+			res.status(200).json({
+				status: 'spying',
+				attacker: user.username,
+				defender: req.body.defender,
+				msg: log('Spying', user.username, req.body.defender) //TODO: am I using this msg parameter anywhere?
 			});
+			res.end();
 
+			logActivity(user.id);
 		});
+
 	});
 };
 
@@ -98,10 +93,9 @@ const spyStatusRequest = async (req, res) => {
 };
 
 // TODO: Fix it
-const spyLogRequest = (req, res) => {
+function spyLogRequest(req, res) {
 	//grab the spying log and equipment stolen based on the id
-	let query = 'SELECT pastSpying.id AS id, pastSpying.eventTime AS eventTime, pastSpying.attackerId AS attackerId, pastSpying.defenderId AS defenderId, atk.username AS attackerUsername, def.username AS defenderUsername, pastSpying.attackingUnits AS attackingUnits, pastSpying.success AS success, pastSpying.spoilsGold AS spoilsGold, equipmentStolen.name AS equipmentStolenName, equipmentStolen.type AS equipmentStolenType, equipmentStolen.quantity AS equipmentStolenQuantity FROM pastSpying LEFT JOIN equipmentStolen ON pastSpying.id = equipmentStolen.pastSpyingId LEFT JOIN accounts AS atk ON pastSpying.attackerId = atk.id LEFT JOIN accounts AS def ON pastSpying.defenderId = def.id WHERE pastSpying.attackerId = ? OR pastSpying.defenderId = ? ORDER BY eventTime DESC LIMIT ?, ?;';
-	pool.query(query, [req.body.id, req.body.id, req.body.start, req.body.length], (err, results) => {
+	pool.query('SELECT pastSpying.id AS id, pastSpying.eventTime AS eventTime, pastSpying.attackerId AS attackerId, pastSpying.defenderId AS defenderId, atk.username AS attackerUsername, def.username AS defenderUsername, pastSpying.attackingUnits AS attackingUnits, pastSpying.success AS success, pastSpying.spoilsGold AS spoilsGold, equipmentStolen.name AS equipmentStolenName, equipmentStolen.type AS equipmentStolenType, equipmentStolen.quantity AS equipmentStolenQuantity FROM pastSpying LEFT JOIN equipmentStolen ON pastSpying.id = equipmentStolen.pastSpyingId LEFT JOIN accounts AS atk ON pastSpying.attackerId = atk.id LEFT JOIN accounts AS def ON pastSpying.defenderId = def.id WHERE pastSpying.attackerId = ? OR pastSpying.defenderId = ? ORDER BY eventTime DESC LIMIT ?, ?;', [req.body.id, req.body.id, req.body.start, req.body.length], (err, results) => {
 		if (err) throw err;
 
 		//build the sendable data structure (delete names from successful events when you're the losing defender, etc.)
@@ -147,7 +141,7 @@ const spyLogRequest = (req, res) => {
 	});
 };
 
-const runSpyTick = () => {
+function runSpyTick() {
 	//find each pending spy event
 	let spyTick = new CronJob('* * * * * *', async () => {
 		// Get list of spying requests
@@ -158,16 +152,13 @@ const runSpyTick = () => {
 		// Execute every single one 
 		pendingSpyingList.forEach(async (pendingSpying) => {
 			//check that the attacker still has enough spies
-			let query = 'SELECT spies FROM profiles WHERE accountId = ?;';
-			let attackerSpies = (await pool.promise().query(query, [pendingSpying.attackerId]))[0]
+			let attackerSpies = (await pool.promise().query('SELECT spies FROM profiles WHERE accountId = ?;', [pendingSpying.attackerId]))[0]
 
 			if (attackerSpies[0].spies < pendingSpying.attackingUnits) {
 				//delete the failed spying
-				let query = 'DELETE FROM pendingSpying WHERE id = ?;';
-				pool.query(query, [pendingSpying.id], (err) => {
-					if (err) throw err;
-					log('Not enough spies for spying', pendingSpying.attackerId, attackerSpies[0].spies, pendingSpying.attackingUnits);
-				});
+				await pool.promise().query('DELETE FROM pendingSpying WHERE id = ?;', [pendingSpying.id])
+				log('Not enough spies for spying', pendingSpying.attackerId, attackerSpies[0].spies, pendingSpying.attackingUnits);
+
 				return;
 			}
 
@@ -229,7 +220,7 @@ const spyGameplayLogic = async (pendingSpying) => {
 
 };
 
-const spyStealEquipment = (pendingSpying, spoilsGold) => {
+function spyStealEquipment(pendingSpying, spoilsGold) {
 	let query = 'SELECT id FROM pastSpying WHERE eventTime = ? AND attackerId = ? AND defenderId = ? AND spoilsGold = ?;'; //make it VERY hard to grab the wrong one
 	pool.query(query, [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, spoilsGold], (err, results) => {
 		if (err) throw err;
@@ -290,7 +281,7 @@ const spyStealEquipmentInner = async (attackerId, defenderId, attackingUnits, pa
 	spyStealEquipmentSelectItemsToSteal(attackerId, defenderId, attackingUnits, results, pastSpyingId);
 };
 
-const removeForEachSoldier = (results, soldiers, cb) => {
+function removeForEachSoldier(results, soldiers, cb) {
 	getEquipmentStatistics((err, {
 		statistics
 	}) => {
@@ -398,32 +389,28 @@ const spyStealEquipmentSelectItemsToSteal = async (attackerId, defenderId, attac
 	}
 };
 
-const spyStealEquipmentIncrementItemsToInventory = (accountId, items) => {
+async function spyStealEquipmentIncrementItemsToInventory(accountId, items) {
 	//add the items to the players's inventory
-	items.forEach((item) => {
-		let query = 'SELECT * FROM equipment WHERE accountId = ? AND name = ? AND type = ?;';
-		pool.query(query, [accountId, item.name, item.type], (err, results) => {
-			if (err) throw err;
+	items.forEach(async (item) => {
+		let results = (await pool.query(
+			'SELECT * FROM equipment WHERE accountId = ? AND name = ? AND type = ?;',
+			[accountId, item.name, item.type]))[0]
 
-			let query;
+		let query;
 
-			//if the player has this item, or not
-			if (results.length > 0) {
-				query = 'UPDATE equipment SET quantity = quantity + ? WHERE accountId = ? AND name = ? AND type = ?;';
-			} else {
-				query = 'INSERT INTO equipment (quantity, accountId, name, type) VALUES (?, ?, ?, ?);';
-			}
+		//if the player has this item, or not
+		if (results.length > 0) {
+			query = 'UPDATE equipment SET quantity = quantity + ? WHERE accountId = ? AND name = ? AND type = ?;';
+		} else {
+			query = 'INSERT INTO equipment (quantity, accountId, name, type) VALUES (?, ?, ?, ?);';
+		}
 
-			pool.query(query, [item.quantity, accountId, item.name, item.type], (err) => {
-				if (err) throw err;
-			});
-		});
+		await pool.promise().query(query, [item.quantity, accountId, item.name, item.type])
 	});
 
 	//error checking
 	items.forEach((item) => {
-		let query = 'SELECT * FROM equipment WHERE accountId = ? AND name = ? AND type = ?;';
-		pool.query(query, [accountId, item.name, item.type], (err, results) => {
+		pool.query('SELECT * FROM equipment WHERE accountId = ? AND name = ? AND type = ?;', [accountId, item.name, item.type], (err, results) => {
 			if (err) throw err;
 
 			if (results.length > 1) {
@@ -433,18 +420,14 @@ const spyStealEquipmentIncrementItemsToInventory = (accountId, items) => {
 	});
 };
 
-const spyStealEquipmentDecrementItemsFromInventory = (accountId, items) => {
+async function spyStealEquipmentDecrementItemsFromInventory(accountId, items) {
 	//remove these items from the player's inventory
-	items.forEach((item) => {
-		let query = 'UPDATE equipment SET quantity = quantity - ? WHERE accountId = ? AND id = ?;';
-		pool.query(query, [item.quantity, accountId, item.id], (err) => {
-			if (err) throw err;
-		});
+	items.forEach(async (item) => {
+		await pool.promise().query('UPDATE equipment SET quantity = quantity - ? WHERE accountId = ? AND id = ?;', [item.quantity, accountId, item.id])
 	});
 
 	//check to see if any quantities are negative
-	let query = 'SELECT * FROM equipment WHERE quantity < 0;';
-	pool.query(query, (err, results) => {
+	pool.query('SELECT * FROM equipment WHERE quantity < 0;', (err, results) => {
 		if (err) throw err;
 
 		if (results.length !== 0) {
@@ -453,31 +436,25 @@ const spyStealEquipmentDecrementItemsFromInventory = (accountId, items) => {
 	});
 
 	//clean the database from quantities of 0
-	query = 'DELETE FROM equipment WHERE accountId = ? AND quantity = 0;';
-	pool.query(query, [accountId], (err) => {
-		if (err) throw err;
+	await pool.promise().query('DELETE FROM equipment WHERE accountId = ? AND quantity = 0;', [accountId])
 
-		log('Cleaned database', 'equipment decrement');
-	});
+	log('Cleaned database', 'equipment decrement');
+
 };
 
-const recordEquipmentStolen = (items, pastSpyingId) => {
+function recordEquipmentStolen(items, pastSpyingId) {
 	//record in the database
 	let query = 'INSERT INTO equipmentStolen (pastSpyingId, name, type, quantity) VALUES (?, ?, ?, ?);';
-	items.forEach((item) => {
-		pool.query(query, [pastSpyingId, item.name, item.type, item.quantity], (err) => {
-			if (err) throw err;
+	items.forEach(async (item) => {
+		await pool.promise().query(query, [pastSpyingId, item.name, item.type, item.quantity])
 
-			log('Items stolen', pastSpyingId, JSON.stringify(item));
-		});
+		log('Items stolen', pastSpyingId, JSON.stringify(item));
+
 	});
 };
 
-const updateSuccessStatus = (status, pastSpyingId) => {
-	let query = 'UPDATE pastSpying SET success = ? WHERE id = ?;';
-	pool.query(query, [status, pastSpyingId], (err) => {
-		if (err) throw err;
-	});
+function updateSuccessStatus(status, pastSpyingId) {
+	pool.query('UPDATE pastSpying SET success = ? WHERE id = ?;', [status, pastSpyingId])
 }
 
 module.exports = {

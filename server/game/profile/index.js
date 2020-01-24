@@ -60,8 +60,7 @@ router.get('/recruit', recruitRequest);
 async function profileCreateRequest(req, res) {
 	//separate this section so it can be used elsewhere too
 	//check ID, username and token match (only the profile's owner can create it)
-	let query = 'SELECT accountId FROM sessions WHERE accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;';
-	pool.query(query, [body.username, body.token])
+		pool.query('SELECT accountId FROM sessions WHERE accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;', [body.username, body.token])
 };
 
 
@@ -92,8 +91,8 @@ async function trainRequest(req, res) {
 	let result = await training.trainRequest(user.id, req.body.role)
 
 	if (result) {
-		res.write(result);
 		res.status(400);
+		res.write(result);
 		res.end();
 	} else {
 		let profile = await ProfileFunctions.getProfile(user.username, true)
@@ -126,8 +125,8 @@ async function untrainRequest(req, res) {
 	let result = await training.untrainRequest(user.id, req.body.role)
 
 	if (result) {
-		res.write(result);
 		res.status(400);
+		res.write(result);
 		res.end();
 	} else {
 		let profile = await ProfileFunctions.getProfile(user.username, true)
@@ -161,8 +160,8 @@ async function recruitRequest(req, res) {
 	let result = await training.recruitRequest(user.id);
 
 	if (result) {
-		res.write(result);
 		res.status(400);
+		res.write(result);
 		res.end();
 	} else {
 		let profile = await ProfileFunctions.getProfile(user.username, true)

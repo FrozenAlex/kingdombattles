@@ -23,94 +23,70 @@ let {
 	captureTheFlag
 } = require('./badges.js');
 
-const attackRequest = (req, res) => {
+// Request an attack
+async function attackRequest(req, res) {
 	let attacker = req.session.user;
 
-		//verify that the defender's profile exists
-		let query = 'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);';
-		pool.query(query, [req.body.defender], (err, results) => {
-			if (err) throw err;
+	//verify that the defender's profile exists
+	let results = (await pool.promise().query(
+		'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);', [req.body.defender]))[0]
 
-			if (results.length !== 1) {
-				res.status(400).write(log('Invalid defender credentials', req.body.id, req.body.attacker, req.body.defender, req.body.token));
-				res.end();
-				return;
-			}
+	if (results.length !== 1) {
+		res.status(400).write(log('Invalid defender credentials', req.body.id, req.body.attacker, req.body.defender, req.body.token));
+		res.end();
+		return;
+	}
 
-			let defenderId = results[0].accountId;
+	let defenderId = results[0].accountId;
 
-			//verify that the attacker has enough soldiers
-			let query = 'SELECT soldiers FROM profiles WHERE accountId = ?;';
-			pool.query(query, [req.body.id], (err, results) => {
-				if (err) throw err;
+	//verify that the attacker has enough soldiers
+	let attackerSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;'))[0]
+	if (attackerSoldiers[0].soldiers <= 0) {
+		res.status(400).write(log('Not enough soldiers', req.body.attacker, req.body.defender, attackerSoldiers[0].soldiers));
+		res.end();
+		return;
+	}
 
-				if (results[0].soldiers <= 0) {
-					res.status(400).write(log('Not enough soldiers', req.body.attacker, req.body.defender, results[0].soldiers));
-					res.end();
-					return;
-				}
+	let attackingUnits = attackerSoldiers[0].soldiers;
 
-				let attackingUnits = results[0].soldiers;
+	//verify that the attacker is not already attacking someone
+	let attacking = await isAttacking(req.body.attacker)
+	if (attacking) {
+		res.status(400).write(log('You are already attacking someone', req.body.id, req.body.attacker, req.body.token));
+		res.end();
+		return;
+	}
 
-				//verify that the attacker is not already attacking someone
-				isAttacking(req.body.attacker, (err, attacking) => {
-					if (err) throw err;
+	//create the pending attack record
+	await pool.promise().query('INSERT INTO pendingCombat (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 60 * ? SECOND), ?, ?, ?);', [attackingUnits, req.body.id, defenderId, attackingUnits])
 
-					if (attacking) {
-						res.status(400).write(log('You are already attacking someone', req.body.id, req.body.attacker, req.body.token));
-						res.end();
-						return;
-					}
-
-					//create the pending attack record
-					let query = 'INSERT INTO pendingCombat (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 60 * ? SECOND), ?, ?, ?);';
-					pool.query(query, [attackingUnits, req.body.id, defenderId, attackingUnits], (err) => {
-						if (err) throw err;
-
-						res.status(200).json({
-							status: 'attacking',
-							attacker: req.body.attacker,
-							defender: req.body.defender,
-							msg: log('Attacking', req.body.attacker, req.body.defender)
-						});
-						res.end();
-
-						logActivity(req.body.id);
-					});
-				});
-			});
-		});
-};
-
-const attackStatusRequest = (connection) => (req, res) => {
-	//verify the credentials
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	pool.query(query, [req.body.id, req.body.token], (err, results) => {
-		if (err) throw err;
-
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid attack status request credentials', req.body.id, req.body.token));
-			res.end();
-			return;
-		}
-
-		isAttacking(connection, req.body.id, (err, attacking, defender) => {
-			if (err) throw err;
-
-			res.status(200).json({
-				status: attacking ? 'attacking' : 'idle',
-				defender: defender
-			});
-
-			res.end();
-		});
+	res.status(200).json({
+		status: 'attacking',
+		attacker: req.body.attacker,
+		defender: req.body.defender,
+		msg: log('Attacking', req.body.attacker, req.body.defender)
 	});
+	res.end();
+
+	logActivity(req.body.id);
+
+
 };
 
-const combatLogRequest = (connection) => (req, res) => {
+async function attackStatusRequest(req, res) {
+
+	let attacking = await isAttacking(req.body.id)
+	res.status(200).json({
+		status: attacking ? 'attacking' : 'idle',
+		defender: attacking
+	});
+
+	res.end();
+};
+
+async function combatLogRequest(req, res) {
 	//verify the user's credentials
-	let query = 'SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;';
-	pool.query(query, [req.body.id, req.body.token], (err, results) => {
+	pool.query('SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;', [req.body.id, req.body.token], (err, results) => {
 		if (err) throw err;
 
 		if (results[0].total !== 1) {
@@ -120,14 +96,12 @@ const combatLogRequest = (connection) => (req, res) => {
 		}
 
 		//grab the username based on the ID
-		let query = 'SELECT username FROM accounts WHERE id = ?;';
-		pool.query(query, [req.body.id], (err, results) => {
+		pool.query('SELECT username FROM accounts WHERE id = ?;', [req.body.id], (err, results) => {
 			if (err) throw err;
 
 			let cachedName = results[0].username; //HOTFIX
 
-			let query = 'SELECT pastCombat.*, atk.username AS attacker, def.username AS defender FROM pastCombat JOIN accounts AS atk ON pastCombat.attackerId = atk.id JOIN accounts AS def ON pastCombat.defenderId = def.id WHERE atk.username = ? OR def.username = ? ORDER BY eventTime DESC LIMIT ?, ?;';
-			pool.query(query, [results[0].username, results[0].username, req.body.start, req.body.length], (err, results) => {
+			pool.query('SELECT pastCombat.*, atk.username AS attacker, def.username AS defender FROM pastCombat JOIN accounts AS atk ON pastCombat.attackerId = atk.id JOIN accounts AS def ON pastCombat.defenderId = def.id WHERE atk.username = ? OR def.username = ? ORDER BY eventTime DESC LIMIT ?, ?;', [results[0].username, results[0].username, req.body.start, req.body.length], (err, results) => {
 				if (err) throw err;
 
 				res.status(200).json(results);
@@ -137,7 +111,7 @@ const combatLogRequest = (connection) => (req, res) => {
 	});
 };
 
-const runCombatTick = (connection) => {
+function runCombatTick() {
 	//once per second
 	let combatTick = new CronJob('* * * * * *', async () => {
 		//find each pending combat
@@ -148,15 +122,15 @@ const runCombatTick = (connection) => {
 			// Attack script 
 
 			// Check that the attacker still has enough soliders
-			let attackerSoldiers = (await pool.query('SELECT soldiers FROM profiles WHERE accountId = ?;', [pendingCombat.attackerId]))[0]
+			let attackerSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;', [pendingCombat.attackerId]))[0]
 
 			// If there's no soldiers then delete the combat
-			if (results[0].soldiers < pendingCombat.attackingUnits) {
+			if (attackerSoldiers[0].soldiers < pendingCombat.attackingUnits) {
 				//delete the failed combat
 				await pool.promise().query('DELETE FROM pendingCombat WHERE id = ?;', [pendingCombat.id])
-				
+
 				// Log
-				log('Not enough soldiers for attack', pendingCombat.attackerId, results[0].soldiers, pendingCombat.attackingUnits);
+				log('Not enough soldiers for attack', pendingCombat.attackerId, attackerSoldiers[0].soldiers, pendingCombat.attackingUnits);
 				return;
 			}
 
@@ -164,7 +138,7 @@ const runCombatTick = (connection) => {
 			let undefended = await isAttacking(pendingCombat.defenderId)
 
 			//get the defending unit count, gold
-			let defenderUnitsGold = (await pool.query('SELECT soldiers, recruits, gold FROM profiles WHERE accountId = ?;', [pendingCombat.defenderId]))[0]
+			let defenderUnitsGold = (await pool.promise().query('SELECT soldiers, recruits, gold FROM profiles WHERE accountId = ?;', [pendingCombat.defenderId]))[0]
 
 			// If the other party is attacking it means trained soldiers are away
 			let defendingUnits;
@@ -228,8 +202,7 @@ const runCombatTick = (connection) => {
 			let flagCaptured = await captureTheFlag(pendingCombat.attackerId, pendingCombat.defenderId, victor !== 'attacker')
 
 			//save the combat
-			let query = 'INSERT INTO pastCombat (eventTime, attackerId, defenderId, attackingUnits, defendingUnits, undefended, victor, spoilsGold, attackerCasualties, flagCaptured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);';
-			(await pool.promise().query(query,
+			(await pool.promise().query('INSERT INTO pastCombat (eventTime, attackerId, defenderId, attackingUnits, defendingUnits, undefended, victor, spoilsGold, attackerCasualties, flagCaptured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
 				[
 					pendingCombat.eventTime,
 					pendingCombat.attackerId,
@@ -281,29 +254,22 @@ const runCombatTick = (connection) => {
 };
 
 //Part of runCombatTick
-let removeConsumables = (consumables, number) => {
+let removeConsumables = async (consumables, number) => {
 	if (number > 0 && consumables.length > 0) {
 		//if not rolling to the next stack after this
 		if (number - consumables[0].quantity <= 0) {
-			let query = 'UPDATE equipment SET quantity = quantity - ? WHERE id = ?;';
-			pool.query(query, [number, consumables[0].id], (err) => {
-				if (err) throw err;
-			});
-
+			await pool.promise().query('UPDATE equipment SET quantity = quantity - ? WHERE id = ?;', [number, consumables[0].id])
+			
 			return;
 		} else { //will be rolling to the next stack after this
-			let query = 'UPDATE equipment SET quantity = 0 WHERE id = ?;';
+			await pool.promise().query('UPDATE equipment SET quantity = 0 WHERE id = ?;', [consumables[0].id])
 
-			pool.query(query, [consumables[0].id], (err) => {
-				if (err) throw err;
+			//tick
+			number -= consumables[0].quantity;
+			consumables.shift();
 
-				//tick
-				number -= consumables[0].quantity;
-				consumables.shift();
-
-				//it took me two hours to write this line; you can't make functions inside loops	
-				return removeConsumables(consumables, number);
-			});
+			//it took me two hours to write this line; you can't make functions inside loops	
+			return removeConsumables(consumables, number);
 		}
 	}
 };

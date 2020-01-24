@@ -6,8 +6,7 @@ let pool = require('./../db/pool.js')
 const round = (x) => Math.round(x * 100) / 100;
 
 async function statisticsRequest(req, res) {
-	let query = 'SELECT COUNT(*) AS playerCount, SUM(gold) / COUNT(*) AS goldAverage, SUM(recruits) AS recruitTotal, SUM(soldiers) AS soldierTotal, SUM(scientists) AS scientistTotal, SUM(spies) AS spyTotal FROM profiles;';
-	let results = (await pool.promise().query(query))[0]
+	let results = (await pool.promise().query('SELECT COUNT(*) AS playerCount, SUM(gold) / COUNT(*) AS goldAverage, SUM(recruits) AS recruitTotal, SUM(soldiers) AS soldierTotal, SUM(scientists) AS scientistTotal, SUM(spies) AS spyTotal FROM profiles;'))[0]
 
 	let playerCount = results[0].playerCount;
 	let goldAverage = results[0].goldAverage;

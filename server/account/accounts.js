@@ -70,8 +70,7 @@ async function signupRequest(req, res) {
 	}
 
 	//check to see if the email has been banned
-	let query = 'SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;';
-	let results = await pool.promise().query(query, [fields.email])
+		let results = await pool.promise().query('SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;', [fields.email])
 
 	//if the email has been banned
 	if (results[0][0].total > 0) {
@@ -151,8 +150,7 @@ async function signupRequest(req, res) {
  */
 async function verifyRequest(req, res) {
 	//get the saved data
-	let query = 'SELECT * FROM signups WHERE email = ?;';
-	let signupRequests = (await pool.promise().query(query, [req.query.email]))[0]
+		let signupRequests = (await pool.promise().query('SELECT * FROM signups WHERE email = ?;', [req.query.email]))[0]
 
 	//correct number of results
 	if (signupRequests.length !== 1) {
@@ -204,8 +202,7 @@ async function loginRequest(req, res) {
 	}
 
 	//check to see if the email has been banned
-	let query = 'SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;';
-	let results = (await pool.promise().query(query, [fields.email]))[0]
+		let results = (await pool.promise().query('SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;', [fields.email]))[0]
 
 	//if the email has been banned
 	if (results.total > 0) {
@@ -411,8 +408,7 @@ async function passwordResetRequest(req, res) {
 
 async function privacySettingsRequest(req, res) {
 	//fetch each privacy setting
-	let query = 'SELECT promotions FROM accounts WHERE id = ?;';
-	let promotions = (await pool.promise().query(query, [req.session.user.id]))[0]
+		let promotions = (await pool.promise().query('SELECT promotions FROM accounts WHERE id = ?;', [req.session.user.id]))[0]
 	res.status(200).json({
 		promotions: promotions[0].promotions
 	});

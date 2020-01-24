@@ -8,32 +8,27 @@ let {
 	log
 } = require('../common/utilities.js');
 
-const getEquipmentStatistics = () => {
+function getEquipmentStatistics() {
 	//TODO: apiVisible field
 	return require('./data/equipment_statistics.json')
 };
 
 const getEquipmentOwned = async (id) => {
-	let query = 'SELECT name, quantity FROM equipment WHERE accountId = ?;';
-	pool.query(query, [id], (err, results) => {
-		if (err) throw err;
+	let results = (await pool.promise().query('SELECT * FROM equipment WHERE accountId = ?;', [id]))[0]
 
-		let ret = {};
+	let ret = {};
 
-		Object.keys(results).map((key) => {
-			if (ret[results[key].name] !== undefined) {
-				log('WARNING: Invalid database state, equipment owned', id, JSON.stringify(results));
-			}
-			ret[results[key].name] = results[key].quantity;
-		});
-
-		return {
-			'owned': ret
-		};
+	Object.keys(results).map((key) => {
+		if (ret[results[key].name] !== undefined) {
+			log('WARNING: Invalid database state, equipment owned', id, JSON.stringify(results));
+		}
+		ret[results[key].name] = results[key].quantity;
 	});
+
+	return ret;
 };
 
-const getBadgesStatistics = () => {
+function getBadgesStatistics() {
 	//TODO: apiVisible field
 	return {
 		'statistics': require('./data/badge_statistics.json')
@@ -63,7 +58,7 @@ const getBadgesOwned = async (id) => {
 	return ret;
 }
 
-const isNormalInteger = (str) => {
+function isNormalInteger(str) {
 	let n = Math.floor(Number(str));
 	return n !== Infinity && String(n) == str && n >= 0;
 };
@@ -85,8 +80,7 @@ const isAttacking = async (user) => {
 		return null
 	} else {
 		//get the username of the person being attacked
-		let query = 'SELECT username FROM accounts WHERE id = ?;';
-		let results = await pool.promise().query(query, [results[0].defenderId])[0]
+		let results = await pool.promise().query('SELECT username FROM accounts WHERE id = ?;', [results[0].defenderId])[0]
 		return results[0].username;
 	}
 };
@@ -141,7 +135,7 @@ const getLadderData = async (field, start, length) => {
  * Updates accounts last activity time
  * @param {number} id Account ID
  */
-const logActivity = (id) => {
+function logActivity(id) {
 	// Don
 	pool.promise().query('UPDATE accounts SET lastActivityTime = CURRENT_TIMESTAMP() WHERE id = ?;', [id])
 };
