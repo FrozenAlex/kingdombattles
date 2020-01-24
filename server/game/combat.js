@@ -32,7 +32,7 @@ async function attackRequest(req, res) {
 		'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);', [req.body.defender]))[0]
 
 	if (results.length !== 1) {
-		res.status(400).write(log('Invalid defender credentials', req.body.id, req.body.attacker, req.body.defender, req.body.token));
+		res.status(400).write(log('Invalid defender credentials', req.body.id, req.body.attacker, req.body.defender));
 		res.end();
 		return;
 	}
@@ -40,7 +40,7 @@ async function attackRequest(req, res) {
 	let defenderId = results[0].accountId;
 
 	//verify that the attacker has enough soldiers
-	let attackerSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;'))[0]
+	let attackerSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;', [attacker.id]))[0]
 	if (attackerSoldiers[0].soldiers <= 0) {
 		res.status(400).write(log('Not enough soldiers', req.body.attacker, req.body.defender, attackerSoldiers[0].soldiers));
 		res.end();
@@ -85,38 +85,29 @@ async function attackStatusRequest(req, res) {
 };
 
 async function combatLogRequest(req, res) {
-	//verify the user's credentials
-	pool.query('SELECT COUNT(*) AS total FROM sessions WHERE accountId = ? AND token = ?;', [req.body.id, req.body.token], (err, results) => {
-		if (err) throw err;
+	// User contains account id and username
+	let user = req.session.user;
 
-		if (results[0].total !== 1) {
-			res.status(400).write(log('Invalid combat log credentials', req.body.id, req.body.token));
-			res.end();
-			return;
-		}
+	let combatLog = (await pool.promise().query(
+		'SELECT pastCombat.*, atk.username AS attacker, def.username AS defender FROM pastCombat JOIN accounts AS atk ON pastCombat.attackerId = atk.id JOIN accounts AS def ON pastCombat.defenderId = def.id WHERE atk.username = ? OR def.username = ? ORDER BY eventTime DESC LIMIT ?, ?;',
+		[
+			user.username,
+			user.username,
+			req.body.start,
+			req.body.length
+		]))[0]
 
-		//grab the username based on the ID
-		pool.query('SELECT username FROM accounts WHERE id = ?;', [req.body.id], (err, results) => {
-			if (err) throw err;
-
-			let cachedName = results[0].username; //HOTFIX
-
-			pool.query('SELECT pastCombat.*, atk.username AS attacker, def.username AS defender FROM pastCombat JOIN accounts AS atk ON pastCombat.attackerId = atk.id JOIN accounts AS def ON pastCombat.defenderId = def.id WHERE atk.username = ? OR def.username = ? ORDER BY eventTime DESC LIMIT ?, ?;', [results[0].username, results[0].username, req.body.start, req.body.length], (err, results) => {
-				if (err) throw err;
-
-				res.status(200).json(results);
-				log('Combat log sent', cachedName, req.body.id, req.body.token, req.body.start, req.body.length);
-			});
-		});
-	});
+	res.status(200).json(combatLog);
+	log('Combat log sent', user.username, user.id, req.body.start, req.body.length);
 };
 
 function runCombatTick() {
 	//once per second
-	let combatTick = new CronJob('* * * * * *', async () => {
+	let combatTick = new CronJob('0 * * * * *', async () => {
 		//find each pending combat
 		let pendingCombatList = (await pool.promise().query('SELECT * FROM pendingCombat WHERE eventTime < CURRENT_TIMESTAMP();'))[0]
 
+		// Concurrency issue if doing this every second
 		// Execute all of them
 		pendingCombatList.forEach(async (pendingCombat) => {
 			// Attack script 
@@ -195,14 +186,14 @@ function runCombatTick() {
 			let victor = rand <= attackerEquipmentBoost + attackerConsumablesBoost + pendingCombat.attackingUnits ? 'attacker' : 'defender';
 
 			//determine the spoils and casualties
-			let spoilsGold = Math.floor(results[0].gold * (victor === 'attacker' ? 0.1 : 0.02));
+			let spoilsGold = Math.floor(defenderUnitsGold[0].gold * (victor === 'attacker' ? 0.1 : 0.02));
 			let attackerCasualties = Math.floor((pendingCombat.attackingUnits >= 10 ? pendingCombat.attackingUnits : 0) * (victor === 'attacker' ? 0 : Math.random() / 5));
 
 			//capture the flag logic
 			let flagCaptured = await captureTheFlag(pendingCombat.attackerId, pendingCombat.defenderId, victor !== 'attacker')
 
 			//save the combat
-			(await pool.promise().query('INSERT INTO pastCombat (eventTime, attackerId, defenderId, attackingUnits, defendingUnits, undefended, victor, spoilsGold, attackerCasualties, flagCaptured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+			await pool.promise().query('INSERT INTO pastCombat (eventTime, attackerId, defenderId, attackingUnits, defendingUnits, undefended, victor, spoilsGold, attackerCasualties, flagCaptured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
 				[
 					pendingCombat.eventTime,
 					pendingCombat.attackerId,
@@ -214,7 +205,7 @@ function runCombatTick() {
 					spoilsGold,
 					attackerCasualties,
 					flagCaptured
-				]))
+				])
 
 			//update the attacker profile
 			let updateAttackerQuery = 'UPDATE profiles SET gold = gold + ?, soldiers = soldiers - ? WHERE accountId = ?;';
@@ -238,10 +229,10 @@ function runCombatTick() {
 			);
 
 			log('Combat executed', pendingCombat.attackerId, pendingCombat.defenderId, victor, spoilsGold);
-			logDiagnostics(connection, 'death', attackerCasualties);
+			logDiagnostics('death', attackerCasualties);
 
 			//clean the database
-			pool.promise().query(
+			await pool.promise().query(
 				'DELETE FROM equipment WHERE quantity <= 0;'
 			)
 			// Log 
@@ -259,7 +250,7 @@ let removeConsumables = async (consumables, number) => {
 		//if not rolling to the next stack after this
 		if (number - consumables[0].quantity <= 0) {
 			await pool.promise().query('UPDATE equipment SET quantity = quantity - ? WHERE id = ?;', [number, consumables[0].id])
-			
+
 			return;
 		} else { //will be rolling to the next stack after this
 			await pool.promise().query('UPDATE equipment SET quantity = 0 WHERE id = ?;', [consumables[0].id])

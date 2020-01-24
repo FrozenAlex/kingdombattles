@@ -79,7 +79,6 @@ module.exports = function (session) {
                     if (err) cb(err)
                     else {
                         cb();
-                        console.log("Hooray insert is done correctly")
                     }
                 })
         }

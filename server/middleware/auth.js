@@ -50,7 +50,6 @@ async function requireAuth(req, res, next) {
 	try {
 		// If this key exists (user saves username and userid)
 		if (req.session.user) {
-			console.log('success')
 			next()
 		} else {
 			res.status(440).write(log('Invalid session please relogin', JSON.stringify(req.body), req.body.id, req.body.token));

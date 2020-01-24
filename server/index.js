@@ -113,6 +113,6 @@ app.get('*', (req, res) => {
 
 //startup
 http.listen(process.env.PORT  || 3000, () => {
-	log(`listening to *:${process.env.PORT}`);
+	log(`listening to *:${process.env.PORT || 3000}`);
 });
 

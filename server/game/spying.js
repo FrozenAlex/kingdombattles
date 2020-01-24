@@ -22,9 +22,6 @@ let {
 const pool = require('./../db/pool.js');
 
 function spyRequest(req, res) {
-	/// Attacker = username
-	/// id - user id
-	// 
 	let user = req.session.user;
 
 	//verify that the defender's profile exists
@@ -141,9 +138,9 @@ function spyLogRequest(req, res) {
 	});
 };
 
-function runSpyTick() {
+async function runSpyTick() {
 	//find each pending spy event
-	let spyTick = new CronJob('* * * * * *', async () => {
+	let spyTick = new CronJob('0 * * * * *', async () => {
 		// Get list of spying requests
 		let pendingSpyingList = (await pool.promise().query(
 			'SELECT * FROM pendingSpying WHERE eventTime < CURRENT_TIMESTAMP();'
@@ -176,9 +173,10 @@ const spyGameplayLogic = async (pendingSpying) => {
 	let defenderIsAttacking = await isAttacking(pendingSpying.defenderId);
 	let defenderIsSpying = await isSpying(pendingSpying.defenderId);
 
-	let profile = (await pool.promise().query('SELECT * FROM profiles WHERE accountId = ?;', [pendingSpying.defenderId]))[0]
+	// Get defender profile
+	let defenderProfile = (await pool.promise().query('SELECT * FROM profiles WHERE accountId = ?;', [pendingSpying.defenderId]))[0][0]
 
-	let totalEyes = profile[0].recruits + profile[0].soldiers * !defenderIsAttacking + profile[0].spies * !defenderIsSpying + profile[0].scientists;
+	let totalEyes = defenderProfile.recruits + defenderProfile.soldiers * !defenderIsAttacking + defenderProfile.spies * !defenderIsSpying + defenderProfile.scientists;
 
 	//more spies reduces the chances of being seen? Counter intuitive
 	let chanceSeen = totalEyes / (pendingSpying.attackingUnits * 10); //it takes 10 eyes to guarantee the capture of 1 spy, 50% chance to capture 2 spies, etc.
@@ -200,7 +198,7 @@ const spyGameplayLogic = async (pendingSpying) => {
 		logDiagnostics('death', pendingSpying.attackingUnits);
 	} else {
 		//steal this much gold on success
-		let spoilsGold = Math.random() >= 0.5 ? Math.floor(results[0].gold * 0.2) : 0; //50% chance of stealing gold
+		let spoilsGold = Math.random() >= 0.5 ? Math.floor(defenderProfile.gold * 0.2) : 0; //50% chance of stealing gold
 		await pool.promise().query(
 			'INSERT INTO pastSpying (eventTime, attackerId, defenderId, attackingUnits, success, spoilsGold) VALUES (?, ?, ?, ?, ?, ?);', [pendingSpying.eventTime, pendingSpying.attackerId, pendingSpying.defenderId, pendingSpying.attackingUnits, spoilsGold ? 'success' : 'ineffective', spoilsGold])
 
@@ -250,9 +248,9 @@ const spyStealEquipmentInner = async (attackerId, defenderId, attackingUnits, pa
 	defenderEquipment = defenderEquipment.filter(item => equipment[item.type][item.name].stealable);
 
 	//if he's not attacking, skip to the next step
-	if (!attacking) {
-		return spyStealEquipmentSelectItemsToSteal(attackerId, defenderId, attackingUnits, results, pastSpyingId);
-	}
+	// if (!attacking) {
+	// return spyStealEquipmentSelectItemsToSteal(attackerId, defenderId, attackingUnits, defenderEquipment, pastSpyingId);
+	// }
 
 	//count the number of weapons/consumable items to be skipped, from strongest to weakest
 	let defenderSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;', [defenderId]))[0];
@@ -272,7 +270,7 @@ const spyStealEquipmentInner = async (attackerId, defenderId, attackingUnits, pa
 	let defenderConsumables = (await pool.promise().query('SELECT * FROM equipment WHERE accountId = ? AND type = "Consumable";', [defenderId]))[0];
 
 	// Steal consumables
-	let consumableResults = removeForEachSoldier(defenderConsumables, soldierCount);
+	let consumableResults = await removeForEachSoldier(defenderConsumables, soldierCount);
 
 	//splice the two arrays back together
 	// TODO: Something is fishy here. Don't understand
@@ -281,31 +279,27 @@ const spyStealEquipmentInner = async (attackerId, defenderId, attackingUnits, pa
 	spyStealEquipmentSelectItemsToSteal(attackerId, defenderId, attackingUnits, results, pastSpyingId);
 };
 
-function removeForEachSoldier(results, soldiers, cb) {
-	getEquipmentStatistics((err, {
-		statistics
-	}) => {
-		if (err) throw err;
+async function removeForEachSoldier(results, soldiers) {
+	let statistics = getEquipmentStatistics()
 
-		results.sort((a, b) => statistics[a.type][a.name].combatBoost < statistics[b.type][b.name].combatBoost);
+	results.sort((a, b) => statistics[a.type][a.name].combatBoost < statistics[b.type][b.name].combatBoost);
 
-		results = results.map((item) => {
-			//count downwards
-			if (item.quantity > soldiers) {
-				item.quantity -= soldiers;
-				soldiers = 0;
-			} else {
-				soldiers -= item.quantity;
-				item.quantity = 0;
-			}
+	results = results.map((item) => {
+		//count downwards
+		if (item.quantity > soldiers) {
+			item.quantity -= soldiers;
+			soldiers = 0;
+		} else {
+			soldiers -= item.quantity;
+			item.quantity = 0;
+		}
 
-			return item;
-		});
-
-		results = results.filter(item => item.quantity > 0);
-
-		cb(undefined, results);
+		return item;
 	});
+
+	results = results.filter(item => item.quantity > 0);
+
+	return results
 }
 
 /**
