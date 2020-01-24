@@ -29,6 +29,7 @@ app.use(
 	  secret: "ToatallySecretSessions",
 	  saveUninitialized: true,
 	  resave: true,
+	  proxy: true,
 	  cookie: {
 		httpOnly: false,
 		secure: (process.env.NODE_ENV !== "development"),
