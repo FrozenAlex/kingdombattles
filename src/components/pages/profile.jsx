@@ -140,7 +140,7 @@ class Profile extends React.Component {
 				<div className='table noCollapse'>
 					<div className='row'>
 						<p className='col truncate'>Username:</p>
-						<BadgeText className={'col'} name={this.props.profile.activeBadge} filename={this.props.profile.activeBadgeFilename} size={'small'}>{this.props.profile.username}</BadgeText>
+						<BadgeText className={'col'} name={this.props.profile.activeBadge} size={'small'}>{this.props.profile.username}</BadgeText>
 
 						<div className='col double'></div>
 					</div>
@@ -212,7 +212,7 @@ class Profile extends React.Component {
 				<div className='table noCollapse'>
 					<div className='row'>
 						<p className='col truncate'>Username:</p>
-						<BadgeText className={'col'} name={this.props.profile.activeBadge} filename={this.props.profile.activeBadgeFilename} size={'small'}>{this.props.profile.username}</BadgeText>
+						<BadgeText className={'col'} name={this.props.profile.activeBadge} size={'small'}>{this.props.profile.username}</BadgeText>
 
 						<div className='col double truncate' />
 					</div>
@@ -291,7 +291,7 @@ class Profile extends React.Component {
 				<div className='table noCollapse'>
 					<div className='row'>
 						<p className='col truncate'>Username:</p>
-						<BadgeText className={'col'} name={this.props.profile.activeBadge} filename={this.props.profile.activeBadgeFilename} size={'small'}>{this.props.profile.username}</BadgeText>
+						<BadgeText className={'col'} name={this.props.profile.activeBadge} size={'small'}>{this.props.profile.username}</BadgeText>
 
 						<div className='col double' />
 					</div>

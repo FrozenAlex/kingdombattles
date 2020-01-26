@@ -168,7 +168,7 @@ async function recruitRequest(req, res) {
 
 		let badgesOwned = await getBadgesOwned(user.id)
 
-		let activeBadge = Object.keys(badgesOwned).find(name => owned[name].active) || null;
+		let activeBadge = Object.keys(badgesOwned).find(name => badgesOwned[name].active) || null;
 
 		res.status(200).json({
 			username: user.username,

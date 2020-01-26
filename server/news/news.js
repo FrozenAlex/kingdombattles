@@ -9,14 +9,14 @@ let firstline = require('firstline');
 var express = require('express')
 var router = express.Router();
 
-let BaseDir = path.join(__dirname, '..', '..','content','news');
+let BaseDir = path.join(__dirname, '..', '..', 'content', 'news');
 
-let { log } = require('../../common/utilities.js');
+let {
+	log
+} = require('../../common/utilities.js');
 
 router.get('/', newsRequest);
-router.post('/', newsRequest);
 router.get('/headers', newsHeadersRequest);
-router.post('/headers', newsHeadersRequest);
 // router.post('/tag/', newsHeadersRequest);
 // router.post('/article/:article', newsHeadersRequest);
 
@@ -40,8 +40,16 @@ async function newsRequest(req, res) {
 		return;
 	}
 
+	let max;
+	try {
+		max = parseInt(req.query.length) || 99
+	} catch (e) {
+		console.log("Invalid get query param")
+		res.status(400).write("Invalid query parameter");
+		res.end();
+	}
+	
 	//set the maximum
-	let max = parseInt(req.body.length) || 99;
 	if (isNaN(max) || max > fileNames.length) {
 		max = fileNames.length;
 	}

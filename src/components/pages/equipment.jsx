@@ -19,25 +19,27 @@ class Equipment extends React.Component {
 			warning: ''
 		};
 
-		this.getProfile(this.props.username);
+		
 	}
 
 	componentDidMount() {
 		if (!this.props.loggedIn) {
 			this.props.history.replace('/login');
 		}
+		this.getProfile(this.props.username);
 	}
 
 	componentWillUnmount() {
-		this.props.clearProfile();
+		// this.props.clearProfile();
 	}
 
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
-			this.state.fetch();
-			this.sendRequest(this.props.username);
-		}
-	}
+	// componentDidUpdate(prevProps, prevState, snapshot) {
+	// 	// if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
+	// 	// 	this.state.fetch();
+	// 	// 	this.getProfile('',this.props.username);
+	// 	// }
+		
+	// }
 
 	render() {
 		let warningStyle = {
@@ -59,7 +61,6 @@ class Equipment extends React.Component {
 					<p className='centered'>Your Scientists: {this.props.scientists} / Your Gold: {this.props.gold}</p>
 
 					<EquipmentPanel
-						getFetch={this.getFetch.bind(this)}
 						setWarning={this.setWarning.bind(this)}
 						scientists={this.props.scientists}
 						gold={this.props.gold}
@@ -70,26 +71,20 @@ class Equipment extends React.Component {
 		);
 	}
 
+	setWarning(s) {
+		this.setState({ warning: s });
+	}
+
 	//gameplay functions
-	async getProfile(url, username = "") { //send a unified request, using my credentials
+	async getProfile (url, username = "") { //send a unified request, using my credentials
 		// use Axios
-		let response = await Axios.get(`/api/game/profile/${username}`, {
-			withCredentials: true
-		})
+		let response = await Axios.get(`/api/game/profile/${username}`)
 
 		//on success
 		this.props.storeScientists(response.data.scientists);
 		this.props.storeGold(response.data.gold);
 	}
 
-	//bound callbacks
-	getFetch(fn) {
-		this.setState({ fetch: fn });
-	}
-
-	setWarning(s) {
-		this.setState({ warning: s });
-	}
 };
 
 Equipment.propTypes = {

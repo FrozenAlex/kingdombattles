@@ -15,15 +15,16 @@ class BadgeSelect extends React.Component {
 			owned: null
 		};
 
-		if (props.getFetch) {
-			props.getFetch(() => this.getOwnedBadges());
-		}
+	}
+
+	componentDidMount() {
+		this.getOwnedBadges()
 	}
 
 	render() {
 		if (!this.state.owned) {
 			return (
-				<p className='panel'>Loading badges...</p>
+				<p className='panel'>Loading badges...?</p>
 			);
 		}
 
@@ -60,29 +61,17 @@ class BadgeSelect extends React.Component {
 
 	//gameplay functions
 	async setActiveBadge(name) {
-		let response = await Axios.post('/api/game/badges/active',
-			{
-				id: this.props.id,
-				token: this.props.token,
-				name: name
-			},
-			{
-				headers: {
-					"Content-Type": "application/json; charset=UTF-8"
-				}
-			})
+		let response = await Axios.post(
+			'/api/game/badges/active',
+			{name: name}
+		)
+		this.setState({
+			...this.state,
+			owned: response.data
+		});
 	}
 	async getOwnedBadges() { //send a unified request, using my credentials
-		let response = await Axios.post('/api/game/badges/owned',
-			{
-				id: this.props.id,
-				token: this.props.token,
-			},
-			{
-				headers: {
-					"Content-Type": "application/json; charset=UTF-8"
-				}
-			})
+		let response = await Axios.post('/api/game/badges/owned')
 		//on success
 		this.setState({
 			...this.state,

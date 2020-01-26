@@ -29,7 +29,7 @@ class CombatLogRecord extends React.Component {
 				</div>
 
 				<div className='row'>
-					<BadgeText name={badgeName} filename={badgeFilename} size='small' className='col truncate'><span className='mobile hide'>Victor: </span>{this.capitalizeFirstLetter(this.props.victor)} {this.props.undefended ? '(undefended)' : ''}</BadgeText>
+					<BadgeText name={badgeName} size='small' className='col truncate'><span className='mobile hide'>Victor: </span>{this.capitalizeFirstLetter(this.props.victor)} {this.props.undefended ? '(undefended)' : ''}</BadgeText>
 					<p className='col truncate'>Gold: {this.props.spoilsGold}</p>
 					<p className='col truncate'>Atk. Deaths: {this.props.attackerCasualties}</p>
 				</div>

@@ -48,7 +48,6 @@ class BadgeList extends React.Component {
 
 BadgeList.propTypes = {
 	setWarning: PropTypes.func,
-	getFetch: PropTypes.func
 };
 
 export default BadgeList;

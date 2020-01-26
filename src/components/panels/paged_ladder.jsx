@@ -32,7 +32,7 @@ class PagedLadder extends React.Component {
 
 					<div className={'row'} style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
 						<Link className='col centered truncate' to={`/profile?username=${this.state[key].username}`}>
-							<BadgeText name={this.state[key].activeBadge} filename={this.state[key].activeBadgeUrl} size={'small'} centered={true}>{this.state[key].username}</BadgeText>
+							<BadgeText name={this.state[key].activeBadge} size={'small'} centered={true}>{this.state[key].username}</BadgeText>
 						</Link>
 
 						<p className={'col centered truncate'}><span className='mobile show' style={{whiteSpace: 'pre'}}>Soldiers: </span>{this.state[key].soldiers}</p>

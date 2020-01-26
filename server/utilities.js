@@ -41,11 +41,11 @@ const getBadgesOwned = async (id) => {
 	let ret = {}; //names, active
 
 	Object.keys(badges).map((key) => {
-		if (ret[results[key].name] !== undefined) {
-			log('WARNING: Invalid database state, badges owned', id, JSON.stringify(results));
+		if (ret[badges[key].name] !== undefined) {
+			log('WARNING: Invalid database state, badges owned', id, JSON.stringify(badges));
 		}
-		ret[results[key].name] = {
-			active: results[key].active
+		ret[badges[key].name] = {
+			active: badges[key].active
 		};
 	});
 

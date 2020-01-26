@@ -2,6 +2,7 @@ import React from 'react';
 import { withRouter, Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
+import Axios from 'axios';
 
 class Equipment extends React.Component {
 	constructor(props) {
@@ -10,17 +11,11 @@ class Equipment extends React.Component {
 		this.state = {
 			data: []
 		};
-
-		
-		
 	}
 
-	async componentDidMount () {
+	componentDidMount () {
 		// TODO: Check what's going on
-		// let hack = this.sendRequest
-		// if (this.props.getFetch) {
-		// 	this.props.getFetch((field) => this.getProfile('/api/game/equipment/', {field: field} ));
-		// }
+		this.getEquipment('/api/game/equipment/');
 	}
 
 	render() {
@@ -72,7 +67,17 @@ class Equipment extends React.Component {
 	}
 
 	//gameplay functions
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
+	async getEquipment (url, username = "") { //send a unified request, using my credentials
+		// use Axios
+		let response = await Axios.post(`/api/game/equipment/`)
+
+		//on success
+		this.setState({ data: Object.assign({}, this.state.data, response.data) });
+	}
+
+
+	//gameplay functions
+	async sendRequest(url, args = {}) { //send a unified request, using my credentials
 		//build the XHR
 		let xhr = new XMLHttpRequest();
 		xhr.open('POST', url, true);

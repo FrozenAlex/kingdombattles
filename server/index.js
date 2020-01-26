@@ -15,36 +15,45 @@ let pool = require("./db/pool");
 
 let MyStore = require('./util/sessionStore')(expressSession)
 
+// Compress everything in here. Offload it to nginx if you can
 app.use(compression({
 	level: 6
 }))
 
-// Temporary stuff
-app.use('/content/', express.static(path.resolve(__dirname + '/../public/content/')) );
-app.use('/', express.static(path.resolve(__dirname + '/../dist/')) );
+// Static files
+app.use('/', express.static(path.resolve(__dirname + '/../dist/'), {
+	maxAge: 1000*60*60*24*30
+}));
 
 // Use a session for each client
 app.use(
 	expressSession({
-	  secret: "ToatallySecretSessions",
-	  saveUninitialized: true,
-	  resave: true,
-	  proxy: true,
-	  cookie: {
-		httpOnly: false,
-		secure: (process.env.NODE_ENV !== "development"),
-		sameSite: true,
-		maxAge: 30*24*60*60*1000 // 30 Days 
-	  },
-	  store: new MyStore({client: pool}),
-	  rolling: true,
-	  saveUninitialized: false // Don't save not logged in cookies
+		secret: "ToatallySecretSessions",
+		saveUninitialized: true,
+		resave: true,
+		proxy: true,
+		cookie: {
+			httpOnly: false,
+			secure: (process.env.NODE_ENV !== "development"),
+			sameSite: true,
+			maxAge: 30 * 24 * 60 * 60 * 1000 // 30 Days 
+		},
+		store: new MyStore({
+			client: pool
+		}),
+		rolling: true,
+		saveUninitialized: false // Don't save not logged in cookies
 	}),
-  );
+);
 
 //utilities
-let { log } = require('../common/utilities.js');
-let { replacement, stringReplacement } = require('../common/replacement.js');
+let {
+	log
+} = require('../common/utilities.js');
+let {
+	replacement,
+	stringReplacement
+} = require('../common/replacement.js');
 
 
 
@@ -111,15 +120,12 @@ app.post('/api/easteregg', (req, res) => {
 	}
 });
 
-
-
 //fallback to index.html
 app.get('*', (req, res) => {
 	res.sendFile(path.resolve(__dirname + '/../dist/index.html'));
 });
 
 //startup
-http.listen(process.env.PORT  || 3000, () => {
+http.listen(process.env.PORT || 3000, () => {
 	log(`listening to *:${process.env.PORT || 3000}`);
 });
-

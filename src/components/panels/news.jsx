@@ -1,62 +1,62 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown/with-html';
 import PropTypes from 'prop-types';
+import Axios from 'axios';
 
+// Multipurpose news container
 class News extends React.Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
-			//TODO: data?
+			news: null
 		};
+	}
 
-		if (props.getFetch) {
-			props.getFetch( () => this.sendRequest('/api/news/', {length: this.props.length || 10, postId: this.props.postId}) );
+	componentDidMount() {
+		// If it's called with 
+		if (this.props.postId) {
+			this.getNewsArticle(this.props.postId)
+		} else {
+			this.getNews(this.props.length)
 		}
 	}
 
 	render() {
+		if (!this.state.news) {
+			return (
+				<div className='panel centered'>
+					Loading news for you..
+				</div>
+			)
+		}
+
 		return (
 			<div className='panel'>
-				{Object.keys(this.state).map((key) => <div key={key}>
-					<ReactMarkdown source={this.state[key]} escapeHtml={false} />
+				{Object.keys(this.state.news).map((key) => <div key={key}>
+					<ReactMarkdown source={this.state.news[key]} escapeHtml={false} />
 					<hr className='newsLine' />
 				</div>)}
 			</div>
 		);
 	}
 
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.setState(json);
-				}
-				else if (xhr.status === 400 && this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
-			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			//NOTE: No id or token needed for the news
-			...args
-		}));
+	// Gets the list of news
+	async getNews(length) {
+		let news = await Axios.get('/api/news', {
+			params: {  length:length || 4 }
+		});
+		this.setState({ news: news.data });
+	}
+	// Gets the article
+	async getNewsArticle(id) {
+		let news = await Axios.get(`/content/news/${id}`)
+		this.setState({ news: [news.data] });
 	}
 };
 
 News.propTypes = {
-	length: PropTypes.number,
-	setWarning: PropTypes.func,
-	getFetch: PropTypes.func
+	length: PropTypes.number
 };
 
 export default News;

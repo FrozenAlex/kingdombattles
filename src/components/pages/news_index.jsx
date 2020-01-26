@@ -3,6 +3,7 @@ import { withRouter, Link } from 'react-router-dom';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
+import Axios from 'axios';
 
 class NewsIndex extends React.Component {
 	constructor(props) {
@@ -12,7 +13,7 @@ class NewsIndex extends React.Component {
 			warning: '' //TODO: unified warning?
 		};
 
-		this.sendRequest('/api/news/headers');
+		this.getNews('/api/news/headers');
 	}
 
 	render() {
@@ -41,30 +42,9 @@ class NewsIndex extends React.Component {
 		);
 	}
 
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.setState({ data: json });
-				}
-				else if (xhr.status === 400 && this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
-			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			//NOTE: No id or token needed for the news
-			...args
-		}));
+	async getNews(url, args = {}) { //send a unified request, using my credentials
+		let news = await Axios.get('/api/news/headers');
+		this.setState({ data: news.data });
 	}
 
 	setWarning(s) {

@@ -13,10 +13,6 @@ class News extends React.Component {
 		};
 	}
 
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		this.state.fetch();
-	}
-
 	render() {
 		let warningStyle = {
 			display: this.state.warning.length > 0 ? 'flex' : 'none'
@@ -36,7 +32,6 @@ class News extends React.Component {
 
 						<NewsPanel
 							setWarning={this.setWarning.bind(this)}
-							getFetch={ (fn) => this.setState({ fetch: fn }) }
 							postId={this.props.match.params.postId}
 						/>
 					</div>

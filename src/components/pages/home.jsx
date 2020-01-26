@@ -22,10 +22,6 @@ class Home extends React.Component {
 		;
 	}
 
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		this.state.fetch();
-	}
-
 	render() {
 		let warningStyle = {
 			display: this.state.warning.length > 0 ? 'flex' : 'none'
@@ -58,7 +54,7 @@ class Home extends React.Component {
 						<br />
 						<Markdown url={require('./../../assets/content/blurb.md').default} />
 						<h1 className='centered'>News</h1>
-						<News setWarning={this.setWarning.bind(this)} getFetch={ (fn) => this.setState({ fetch: fn }) } />
+						<News length={3}/>
 						<p className='right'><Link to='/news/'>See all news...</Link></p>
 					</div>
 				</div>
