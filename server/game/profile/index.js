@@ -99,7 +99,7 @@ async function trainRequest(req, res) {
 
 		let badgesOwned = await getBadgesOwned(user.id)
 
-		let activeBadge = Object.keys(badgesOwned).find(name => owned[name].active) || null;
+		let activeBadge = Object.keys(badgesOwned).find(name => badgesOwned[name].active) || null;
 
 		res.status(200).json({
 			username: user.username,
@@ -133,7 +133,7 @@ async function untrainRequest(req, res) {
 
 		let badgesOwned = await getBadgesOwned(user.id)
 
-		let activeBadge = Object.keys(badgesOwned).find(name => owned[name].active) || null;
+		let activeBadge = Object.keys(badgesOwned).find(name => badgesOwned[name].active) || null;
 
 		res.status(200).json({
 			username: user.username,
@@ -198,9 +198,9 @@ async function ladderRequest(req, res) {
 	}
 
 	for (let i = 0; i < users.length; i++) {
-		let owned = await getBadgesOwned(users[i].id);
+		let badgesOwned = await getBadgesOwned(users[i].id);
 
-		users[i].activeBadge = Object.keys(owned).find(name => owned[name].active) || null;
+		users[i].activeBadge = Object.keys(owned).find(name => badgesOwned[name].active) || null;
 
 		//don't share IDs
 		delete users[i].id;

@@ -7,7 +7,6 @@ import {
 	STORE_SPIES,
 	STORE_SCIENTISTS,
 	STORE_ACTIVE_BADGE,
-	STORE_ACTIVE_BADGE_FILENAME,
 	CLEAR_PROFILE
 } from '../actions/profile.js';
 
@@ -63,10 +62,6 @@ export const profileReducer = (store = initialStore, action) => {
 
 		case STORE_ACTIVE_BADGE:
 			newStore.activeBadge = action.activeBadge;
-		break;
-
-		case STORE_ACTIVE_BADGE_FILENAME:
-			newStore.activeBadgeFilename = action.activeBadgeFilename;
 		break;
 
 		case CLEAR_PROFILE:

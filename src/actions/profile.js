@@ -6,10 +6,9 @@ export const STORE_SOLDIERS = 'STORE_SOLDIERS';
 export const STORE_SPIES = 'STORE_SPIES';
 export const STORE_SCIENTISTS = 'STORE_SCIENTISTS';
 export const STORE_ACTIVE_BADGE = 'STORE_ACTIVE_BADGE';
-export const STORE_ACTIVE_BADGE_FILENAME = 'STORE_ACTIVE_BADGE_FILENAME';
 export const CLEAR_PROFILE = 'CLEAR_PROFILE';
 
-export const storeProfile = (username, gold, recruits, soldiers, spies, scientists, activeBadge, activeBadgeFilename) => {
+export const storeProfile = (username, gold, recruits, soldiers, spies, scientists, activeBadge) => {
 	return {
 		type: STORE_PROFILE,
 		username: username,
@@ -18,8 +17,7 @@ export const storeProfile = (username, gold, recruits, soldiers, spies, scientis
 		soldiers: soldiers,
 		spies: spies,
 		scientists: scientists,
-		activeBadge: activeBadge,
-		activeBadgeFilename: activeBadgeFilename
+		activeBadge: activeBadge
 	};
 }
 
@@ -69,13 +67,6 @@ export const storeActiveBadge = (activeBadge) => {
 	return {
 		tpye: STORE_ACTIVE_BADGE,
 		activeBadge: activeBadge
-	};
-}
-
-export const storeActiveBadgeFilename = (activeBadgeFilename) => {
-	return {
-		tpye: STORE_ACTIVE_BADGE,
-		activeBadgeFilename: activeBadgeFilename
 	};
 }
 

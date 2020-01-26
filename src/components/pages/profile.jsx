@@ -12,6 +12,7 @@ import CommonLinks from '../panels/common_links.jsx';
 import AttackButton from '../panels/attack_button.jsx';
 import Markdown from '../panels/markdown.jsx';
 import BadgeText from '../panels/badge_text.jsx';
+import Axios from 'axios';
 
 class Profile extends React.Component {
 	constructor(props) {
@@ -22,7 +23,7 @@ class Profile extends React.Component {
 			warning: '', //TODO: unified warning?
 		};
 
-		this.sendRequest('/api/game/profile', {username: this.state.params.username ? this.state.params.username : this.props.account.username});
+		this.sendRequest('/api/game/profile', { username: this.state.params.username ? this.state.params.username : this.props.account.username });
 	}
 
 	componentWillUnmount() {
@@ -89,39 +90,22 @@ class Profile extends React.Component {
 	}
 
 	//gameplay functions
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
+	async sendRequest(url, args = {}) { //send a unified request, using my credentials
 		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
+		let result = await Axios.post(url, args)
 
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
+		let json = result.data;
 
-					this.props.storeProfile(
-						json.username,
-						json.gold,
-						json.recruits,
-						json.soldiers,
-						json.spies,
-						json.scientists,
-						json.activeBadge,
-						json.activeBadgeFilename
-					);
-				}
-				else if (xhr.status === 400) {
-					this.setWarning(xhr.responseText);
-				}
-			}
-		};
+		this.props.storeProfile(
+			json.username,
+			json.gold,
+			json.recruits,
+			json.soldiers,
+			json.spies,
+			json.scientists,
+			json.activeBadge
+		);
 
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			id: this.props.account.id,
-			token: this.props.account.token,
-			...args
-		}));
 	}
 
 	//panel functions
@@ -156,31 +140,31 @@ class Profile extends React.Component {
 						<p className='col truncate'>Recruits:</p>
 						<p className='col mobile half truncate'>{this.props.profile.recruits}</p>
 
-						<button className='col double truncate' onClick={ () => this.sendRequest('/api/game/profile/recruit') }>Recruit More Units</button>
+						<button className='col double truncate' onClick={() => this.sendRequest('/api/game/profile/recruit')}>Recruit More Units</button>
 					</div>
 
 					<div className='row'>
 						<p className='col truncate'>Soldiers:</p>
 						<p className='col mobile half truncate'>{this.props.profile.soldiers}</p>
 
-						<button className='col truncate' onClick={ () => this.sendRequest('/api/game/profile/train', {role: 'soldier'}) }>+Soldier (100g)</button>
-						<button className='col truncate' onClick={ () => this.confirmUntrain('soldier') && this.sendRequest('/api/game/profile/untrain', {role: 'soldier'}) }>Untrain</button>
+						<button className='col truncate' onClick={() => this.sendRequest('/api/game/profile/train', { role: 'soldier' })}>+Soldier (100g)</button>
+						<button className='col truncate' onClick={() => this.confirmUntrain('soldier') && this.sendRequest('/api/game/profile/untrain', { role: 'soldier' })}>Untrain</button>
 					</div>
 
 					<div className='row'>
 						<p className='col truncate'>Scientists:</p>
 						<p className='col mobile half truncate'>{this.props.profile.scientists}</p>
 
-						<button className='col truncate' onClick={ () => this.confirmNoSoldiers('scientist') && this.sendRequest('/api/game/profile/train', {role: 'scientist'}) }>+Scientist (120g)</button>
-						<button className='col truncate' onClick={ () => this.confirmUntrain('scientist') && this.sendRequest('/api/game/profile/untrain', {role: 'scientist'}) }>Untrain</button>
+						<button className='col truncate' onClick={() => this.confirmNoSoldiers('scientist') && this.sendRequest('/api/game/profile/train', { role: 'scientist' })}>+Scientist (120g)</button>
+						<button className='col truncate' onClick={() => this.confirmUntrain('scientist') && this.sendRequest('/api/game/profile/untrain', { role: 'scientist' })}>Untrain</button>
 					</div>
 
 					<div className='row'>
 						<p className='col truncate'>Spies:</p>
 						<p className='col mobile half truncate'>{this.props.profile.spies}</p>
 
-						<button className='col truncate' onClick={ () => this.confirmNoSoldiers('spy') && this.sendRequest('/api/game/profile/train', {role: 'spy'}) }>+Spy (300g)</button>
-						<button className='col truncate' onClick={ () => this.confirmUntrain('spy') && this.sendRequest('/api/game/profile/untrain', {role: 'spy'}) }>Untrain</button>
+						<button className='col truncate' onClick={() => this.confirmNoSoldiers('spy') && this.sendRequest('/api/game/profile/train', { role: 'spy' })}>+Spy (300g)</button>
+						<button className='col truncate' onClick={() => this.confirmUntrain('spy') && this.sendRequest('/api/game/profile/untrain', { role: 'spy' })}>Untrain</button>
 					</div>
 				</div>
 
@@ -197,7 +181,7 @@ class Profile extends React.Component {
 			<div className='sidePanel'>
 				<CommonLinks onClickProfile={(e) => {
 					e.preventDefault();
-					this.sendRequest('/api/game/profile/', {username: this.props.account.username});
+					this.sendRequest('/api/game/profile/', { username: this.props.account.username });
 					this.setWarning('');
 					this.props.history.push('/profile');
 				}} />
