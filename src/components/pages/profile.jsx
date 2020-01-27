@@ -91,20 +91,22 @@ class Profile extends React.Component {
 
 	//gameplay functions
 	async sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let result = await Axios.post(url, args)
+		try {
+			let result = await Axios.post(url, args);
+			let json = result.data;
 
-		let json = result.data;
-
-		this.props.storeProfile(
-			json.username,
-			json.gold,
-			json.recruits,
-			json.soldiers,
-			json.spies,
-			json.scientists,
-			json.activeBadge
-		);
+			this.props.storeProfile(
+				json.username,
+				json.gold,
+				json.recruits,
+				json.soldiers,
+				json.spies,
+				json.scientists,
+				json.activeBadge
+			);
+		} catch (e) {
+			this.setWarning(e.response.data)
+		}
 
 	}
 
