@@ -8,7 +8,7 @@ const path = require('path');
 
 module.exports = env => {
 	return {
-		entry: ['react-hot-loader/patch', `./src/index_dev.jsx`],
+		entry: [`./src/index_dev.jsx`],
 		output: {
 			path: __dirname + '/dist/',
 			filename: 'app.bundle.[name].js',
@@ -26,10 +26,29 @@ module.exports = env => {
 			overlay: {
 				errors: true
 			},
-			host: 'localhost',
+			// liveReload: true,
+			stats: {
+				colors: true,
+				hash: false,
+				version: false,
+				timings: false,
+				assets: false,
+				chunks: false,
+				modules: false,
+				reasons: false,
+				children: false,
+				source: false,
+				errors: true,
+				errorDetails: false,
+				warnings: true,
+				publicPath: false
+			},
+			host: '0.0.0.0',
 			disableHostCheck: true,
+			clientLogLevel: 'silent',
 			historyApiFallback: true,
-			hot: true
+			hot: true,
+			injectHot: true
 		},
 		devtool: 'source-map',
 		module: {
@@ -83,11 +102,6 @@ module.exports = env => {
 				}
 			]
 		},
-		resolve: {
-			alias: {
-				'react-dom': '@hot-loader/react-dom',
-			},
-		},
 		optimization: {
 			minimize: env === 'production',
 			minimizer: [
@@ -104,9 +118,14 @@ module.exports = env => {
 			new HtmlWebpackPlugin({
 				template: "./src/template.html"
 			}),
-			new CopyPlugin([
-				{ from: './content', to: 'content' },
-				{ from: './public', to: '' },
+			new CopyPlugin([{
+					from: './content',
+					to: 'content'
+				},
+				{
+					from: './public',
+					to: ''
+				},
 			]),
 		]
 	};

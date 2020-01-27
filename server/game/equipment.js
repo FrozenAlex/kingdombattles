@@ -28,8 +28,9 @@ async function equipmentRequest(req, res) {
 		let ownedObj = await getEquipmentOwned(user.id)
 
 		//finally, compose the resulting objects
-		res.status(200).json(Object.assign({}, statisticsObj, {
-			"owned": ownedObj
+		res.status(200).json(Object.assign({}, {
+			"owned": ownedObj,
+			statistics: statisticsObj
 		}));
 		res.end();
 	} else {
@@ -37,7 +38,9 @@ async function equipmentRequest(req, res) {
 		switch (req.body.field) {
 			case 'statistics':
 				let statisticsObj = getEquipmentStatistics()
-				res.status(200).json(statisticsObj);
+				res.status(200).json({
+					statistics: statisticsObj
+				});
 				res.end();
 				break;
 			case 'owned':
@@ -68,7 +71,7 @@ async function purchaseRequest(req, res) {
 		res.end();
 		return;
 	}
-	let spying = isSpying(user.id);
+	let spying = await isSpying(user.id);
 
 	if (spying) {
 		res.status(400).write(log('Can\'t purchase while spying', user.id, req.body.token));
@@ -146,7 +149,7 @@ async function purchaseRequest(req, res) {
 }
 
 async function sellRequest(req, res) {
-	let user = req.session
+	let user = req.session.user;
 
 	let attacking = await isAttacking(user.id)
 
@@ -165,9 +168,9 @@ async function sellRequest(req, res) {
 	}
 
 	//get the player's item quantity
-	let playerItems = await pool.promise().query(
+	let playerItems = (await pool.promise().query(
 		'SELECT * FROM equipment WHERE accountId = ? AND type = ? AND name = ?;',
-		[user.id, req.body.type, req.body.name])
+		[user.id, req.body.type, req.body.name]))[0]
 
 	if (playerItems.length === 0) {
 		res.status(400).write(log('Can\'t sell something you don\'t own', user.id, req.body.type, req.body.name));
@@ -194,15 +197,16 @@ async function sellRequest(req, res) {
 	//sale approved.
 
 	//add gold to the user's account
-	await pool.promise().query('UPDATE profiles SET gold = gold + ? WHERE accountId = ?;', [Math.floor(statistics[req.body.type][req.body.name].cost / 2), req.body.id])
+	await pool.promise().query('UPDATE profiles SET gold = gold + ? WHERE accountId = ?;', [Math.floor(statistics[req.body.type][req.body.name].cost / 2),user.id])
 
 	//remove the item from the inventory
-	await pool.promise().query('UPDATE equipment SET quantity = quantity - 1 WHERE id = ?;', [results[0].id])
+	await pool.promise().query('UPDATE equipment SET quantity = quantity - 1 WHERE id = ?;', [playerItems[0].id])
 
 	//return the new owned data
 	let ownedEquipment = await getEquipmentOwned(user.id)
 
-	res.status(200).json(Object.assign(ownedEquipment));
+	res.status(200).json(Object.assign(
+		{owned: ownedEquipment}));
 	res.end();
 
 	log('Sale made', user.id, req.body.type, req.body.name);
@@ -213,7 +217,6 @@ async function sellRequest(req, res) {
 	log('Cleaned database', 'equipment sale');
 
 	logActivity(user.id);
-
 }
 
 module.exports = {

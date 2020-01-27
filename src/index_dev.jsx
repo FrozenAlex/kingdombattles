@@ -1,4 +1,3 @@
-import { hot } from 'react-hot-loader/root';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
@@ -29,14 +28,22 @@ store.subscribe(() => {
 	localStorage.setItem(ITEM_NAME, JSON.stringify(store.getState().account));
 });
 
-let HotApp = hot(App)
 //start the process
 ReactDOM.render(
 	<Provider store={store}>
 		<div>
-			<HotApp />
+			<App />
 			<DevTools />
 		</div>
 	</Provider>,
 	document.querySelector("#root")
 );
+
+// Clear console on each reload
+if (module.hot) {
+    module.hot.accept() // already had this init code 
+
+    module.hot.addStatusHandler(status => {
+        if (status === 'prepare') console.clear()
+    })
+}

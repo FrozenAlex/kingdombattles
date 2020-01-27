@@ -20,7 +20,6 @@ class Equipment extends React.Component {
 
 	render() {
 		let display = this.flattenStructure(this.state.data, this.props.scientists);
-
 		//if there are no scientists
 		if (this.props.scientists <= 0 && display.length === 0) {
 			return (
@@ -76,7 +75,7 @@ class Equipment extends React.Component {
 	}
 
 
-	//gameplay functions
+	// TODO: Remove it
 	async sendRequest(url, args = {}) { //send a unified request, using my credentials
 		//build the XHR
 		let xhr = new XMLHttpRequest();
