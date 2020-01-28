@@ -1,6 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
+import Axios from 'axios';
 
 class AttackButton extends React.Component {
 	constructor(props) {
@@ -34,30 +35,17 @@ class AttackButton extends React.Component {
 	}
 
 	//gameplay functions
-	sendRequest(url, args, onSuccess) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					onSuccess(json);
-				}
-				else if (xhr.status === 400 && this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
+	async sendRequest(url, args, onSuccess) { //send a unified request, using my credentials
+		try {
+			let response = await Axios.post(url, args);
+			onSuccess(response.data);
+		} catch (e) {
+			if (e.response && e.response.data) {
+				this.props.setWarning(e.response.data)
+			} else {
+				console.error(e);
 			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			id: this.props.id,
-			token: this.props.token,
-			...args
-		}));
+		}
 	}
 
 	attackStatus(json) {

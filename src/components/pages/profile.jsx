@@ -107,7 +107,6 @@ class Profile extends React.Component {
 		} catch (e) {
 			this.setWarning(e.response.data)
 		}
-
 	}
 
 	//panel functions

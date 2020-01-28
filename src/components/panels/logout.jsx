@@ -16,12 +16,11 @@ class Logout extends React.Component {
 
 	render() {
 		return (
-			<button className='logoutButton' type='submit' onClick={(e) => { e.preventDefault(); this.sendRequest('/api/account/logout') }} >Logout</button>
+			<button className='logoutButton' type='submit' onClick={(e) => { e.preventDefault(); this.logoutRequest('/api/account/logout') }} >Logout</button>
 		);
 	}
 
-	async sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
+	async logoutRequest(url, args = {}) {
 		let response = await Axios.get('/api/account/logout')
 	
 		// Wait for a response to invalidate sessions

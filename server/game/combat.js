@@ -52,7 +52,7 @@ async function attackRequest(req, res) {
 	//verify that the attacker is not already attacking someone
 	let attacking = await isAttacking(req.body.attacker)
 	if (attacking) {
-		res.status(400).write(log('You are already attacking someone', req.body.id, req.body.attacker, req.body.token));
+		res.status(400).write(log('You are already attacking someone', req.body.id, req.body.attacker));
 		res.end();
 		return;
 	}

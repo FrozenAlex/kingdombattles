@@ -9,6 +9,7 @@ import { storeSpies, clearProfile } from '../../actions/profile.js';
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import PagedSpyingLog from '../panels/paged_spying_log.jsx';
+import Axios from 'axios';
 
 class SpyingLog extends React.Component {
 	constructor(props) {
@@ -112,32 +113,15 @@ class SpyingLog extends React.Component {
 		this.props.history.push(`${this.props.location.pathname}?log=${start}`);
 	}
 
+
 	//gameplay functions
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.props.storeSpies(json.spies);
-				}
-				else if (xhr.status === 400) {
-					this.setWarning(xhr.responseText);
-				}
-			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			id: this.props.id,
-			token: this.props.token,
-			...args
-		}));
+	async sendRequest(url, args = {}) { //send a unified request, using my credentials
+		try {
+			let response = await Axios.post(url, args);
+			this.props.storeSpies(response.spies);
+		} catch (e) {
+			this.setWarning(e.response.data)
+		}
 	}
 
 	//bound callbacks

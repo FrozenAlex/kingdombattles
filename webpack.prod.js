@@ -73,17 +73,29 @@ module.exports = env => {
 						},
 					]
 				},
+				// {
+				// 	test: /\.(md)$/,
+				// 	use: {
+				// 		loader: 'file-loader',
+				// 		options: {
+				// 			outputPath: 'content',
+				// 			publicPath: '/content',
+				// 			name: '[name].[hash].[ext]'
+				// 		}
+				// 	}
+				// },
 				{
 					test: /\.(md)$/,
-					use: {
-						loader: 'file-loader',
+					use: [{
+						loader: 'url-loader',
 						options: {
+							limit: 9000,
 							outputPath: 'content',
 							publicPath: '/content',
 							name: '[name].[hash].[ext]'
-						}
-					}
-				}
+						},
+					}, ],
+				},
 			],
 
 		},
@@ -118,9 +130,14 @@ module.exports = env => {
 				},
 				threshold: 1
 			}),
-			new CopyPlugin([
-				{ from: './content', to: 'content' },
-				{ from: './public', to: '' },
+			new CopyPlugin([{
+					from: './content',
+					to: 'content'
+				},
+				{
+					from: './public',
+					to: ''
+				},
 			]),
 		]
 	};

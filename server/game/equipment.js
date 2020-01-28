@@ -67,14 +67,14 @@ async function purchaseRequest(req, res) {
 	//no purchasing if you're attacking
 	let attacking = await isAttacking(user.id);
 	if (attacking) {
-		res.status(400).write(log('Can\'t purchase while attacking', user.id, req.body.token));
+		res.status(400).write(log('Can\'t purchase while attacking', user.id));
 		res.end();
 		return;
 	}
 	let spying = await isSpying(user.id);
 
 	if (spying) {
-		res.status(400).write(log('Can\'t purchase while spying', user.id, req.body.token));
+		res.status(400).write(log('Can\'t purchase while spying', user.id));
 		res.end();
 		return;
 	}
@@ -141,7 +141,7 @@ async function purchaseRequest(req, res) {
 	}); //TODO: Why is assign here?
 	res.end();
 
-	log('Purchase made', user.id, req.body.token, req.body.type, req.body.name);
+	log('Purchase made', user.id, req.body.type, req.body.name);
 
 	logActivity(user.id);
 

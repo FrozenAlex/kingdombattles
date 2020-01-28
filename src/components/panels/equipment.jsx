@@ -74,37 +74,17 @@ class Equipment extends React.Component {
 		this.setState({ data: Object.assign({}, this.state.data, response.data) });
 	}
 
-
-	// TODO: Remove it
-	async sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.setState({ data: Object.assign({}, this.state.data, json) });
-
-					if (this.props.onSuccess) {
-						this.props.onSuccess(json);
-					}
-				}
-				else if (xhr.status === 400 && this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
+	async sendRequest(url, args = {}) { //send a unified request, using cookies 
+		try {
+			let response = await Axios.post(url, args);
+			this.setState({ data: Object.assign({}, this.state.data, response.data) });
+		} catch (e) {
+			if (e.response && e.response.data) {
+				this.setWarning(e.response.data)
+			}	else{
+				console.error(e)
 			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			id: this.props.id,
-			token: this.props.token,
-			...args
-		}));
+		}
 	}
 
 	flattenStructure(structure, scientists) {

@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 
 import BadgeText from './badge_text.jsx';
 import ProgressiveRainbowText from './progressive_rainbow_text.jsx';
+import Axios from 'axios';
 
 class PagedLadder extends React.Component {
 	constructor(props) {
@@ -13,7 +14,7 @@ class PagedLadder extends React.Component {
 		}
 
 		if (props.getFetch) {
-			props.getFetch( () => this.sendRequest('/api/game/profile/ladder', {start: this.props.start || 0, length: this.props.length || 20}) );
+			props.getFetch(() => this.sendRequest('/api/game/profile/ladder', { start: this.props.start || 0, length: this.props.length || 20 }));
 		}
 	}
 
@@ -26,52 +27,38 @@ class PagedLadder extends React.Component {
 					<p className='col centered'>Recruits</p>
 					<p className='col centered'>Gold</p>
 				</div>
-				{Object.keys(this.state).map((key) =><div key={key} className={`${this.props.highlightedName === this.state[key].username ? ' highlight' : ''}`}>
+				{Object.keys(this.state).map((key) => <div key={key} className={`${this.props.highlightedName === this.state[key].username ? ' highlight' : ''}`}>
 					<hr />
 					<div className='break' />
 
-					<div className={'row'} style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+					<div className={'row'} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
 						<Link className='col centered truncate' to={`/profile?username=${this.state[key].username}`}>
 							<BadgeText name={this.state[key].activeBadge} size={'small'} centered={true}>{this.state[key].username}</BadgeText>
 						</Link>
 
-						<p className={'col centered truncate'}><span className='mobile show' style={{whiteSpace: 'pre'}}>Soldiers: </span>{this.state[key].soldiers}</p>
-						<p className={'col centered truncate'}><span className='mobile show' style={{whiteSpace: 'pre'}}>Recruits: </span>{this.state[key].recruits}</p>
-						<p className={'col centered truncate'}><span className='mobile show' style={{whiteSpace: 'pre'}}>Gold: </span>{this.state[key].gold}</p>
+						<p className={'col centered truncate'}><span className='mobile show' style={{ whiteSpace: 'pre' }}>Soldiers: </span>{this.state[key].soldiers}</p>
+						<p className={'col centered truncate'}><span className='mobile show' style={{ whiteSpace: 'pre' }}>Recruits: </span>{this.state[key].recruits}</p>
+						<p className={'col centered truncate'}><span className='mobile show' style={{ whiteSpace: 'pre' }}>Gold: </span>{this.state[key].gold}</p>
 					</div>
 				</div>)}
 			</div>
 		);
 	}
 
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.setState(json);
-
-					if (this.props.onReceived) {
-						this.props.onReceived(json);
-					}
-				}
-				else if (xhr.status === 400 && this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
+	async sendRequest(url, args = {}) { //send a unified request, using my credentials
+		try {
+			let response = await Axios.post(url, args);
+			this.setState(response.data);
+			if (this.props.onReceived) {
+				this.props.onReceived(response.data);
 			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			//NOTE: No id or token needed for the news
-			...args
-		}));
+		} catch (e) {
+			if (e.response && e.response.data) {
+				this.props.setWarning(e.response.data)
+			}	else{
+				console.error(e)
+			}
+		}
 	}
 };
 

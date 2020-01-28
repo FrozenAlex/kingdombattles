@@ -51,7 +51,7 @@ function spyRequest(req, res) {
 			//verify that the attacker is not already spying on someone
 			let spying = await isSpying(user.username)
 			if (spying) {
-				res.status(400).write(log('You are already spying on someone', user.id, user.username, req.body.token));
+				res.status(400).write(log('You are already spying on someone', user.id, user.username));
 				res.end();
 				return;
 			}
@@ -79,7 +79,8 @@ function spyRequest(req, res) {
  * @param {*} res 
  */
 const spyStatusRequest = async (req, res) => {
-	let spying = await isSpying(req.body.id)
+	let user = req.session.user;
+	let spying = await isSpying(user.id)
 
 	res.status(200).json({
 		status: spying ? 'spying' : 'idle',
@@ -91,8 +92,9 @@ const spyStatusRequest = async (req, res) => {
 
 // TODO: Fix it
 function spyLogRequest(req, res) {
+	let user = req.session.user;
 	//grab the spying log and equipment stolen based on the id
-	pool.query('SELECT pastSpying.id AS id, pastSpying.eventTime AS eventTime, pastSpying.attackerId AS attackerId, pastSpying.defenderId AS defenderId, atk.username AS attackerUsername, def.username AS defenderUsername, pastSpying.attackingUnits AS attackingUnits, pastSpying.success AS success, pastSpying.spoilsGold AS spoilsGold, equipmentStolen.name AS equipmentStolenName, equipmentStolen.type AS equipmentStolenType, equipmentStolen.quantity AS equipmentStolenQuantity FROM pastSpying LEFT JOIN equipmentStolen ON pastSpying.id = equipmentStolen.pastSpyingId LEFT JOIN accounts AS atk ON pastSpying.attackerId = atk.id LEFT JOIN accounts AS def ON pastSpying.defenderId = def.id WHERE pastSpying.attackerId = ? OR pastSpying.defenderId = ? ORDER BY eventTime DESC LIMIT ?, ?;', [req.body.id, req.body.id, req.body.start, req.body.length], (err, results) => {
+	pool.query('SELECT pastSpying.id AS id, pastSpying.eventTime AS eventTime, pastSpying.attackerId AS attackerId, pastSpying.defenderId AS defenderId, atk.username AS attackerUsername, def.username AS defenderUsername, pastSpying.attackingUnits AS attackingUnits, pastSpying.success AS success, pastSpying.spoilsGold AS spoilsGold, equipmentStolen.name AS equipmentStolenName, equipmentStolen.type AS equipmentStolenType, equipmentStolen.quantity AS equipmentStolenQuantity FROM pastSpying LEFT JOIN equipmentStolen ON pastSpying.id = equipmentStolen.pastSpyingId LEFT JOIN accounts AS atk ON pastSpying.attackerId = atk.id LEFT JOIN accounts AS def ON pastSpying.defenderId = def.id WHERE pastSpying.attackerId = ? OR pastSpying.defenderId = ? ORDER BY eventTime DESC LIMIT ?, ?;', [user.id, user.id, req.body.start, req.body.length], (err, results) => {
 		if (err) throw err;
 
 		//build the sendable data structure (delete names from successful events when you're the losing defender, etc.)
@@ -109,7 +111,7 @@ function spyLogRequest(req, res) {
 				return;
 			}
 
-			let hideData = req.body.id === result.defenderId && (result.success === 'success' || result.success === 'ineffective');
+			let hideData = user.id === result.defenderId && (result.success === 'success' || result.success === 'ineffective');
 
 			//creating a new entry
 			ret[result.id] = {

@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Axios from 'axios';
 
 class Statistics extends React.Component {
 	constructor(props) {
@@ -26,31 +27,17 @@ class Statistics extends React.Component {
 		);
 	}
 
-	sendRequest(url, args = {}) { //send a unified request, using my credentials
-		//TODO: move sendRequest() into it's own module
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('POST', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					let json = JSON.parse(xhr.responseText);
-
-					//on success
-					this.setState({ data: json });
-				}
-				else if (xhr.status === 400 && this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
+	async sendRequest(url, args = {}) { //send a unified request, using my credentials
+		try {
+			let response = await Axios.post(url, args);
+			this.setState({ data: response.data });
+		} catch (e) {
+			if (e.response && e.response.data) {
+				this.props.setWarning(e.response.data)
+			} 	else{
+				console.error(e)
 			}
-		};
-
-		xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-		xhr.send(JSON.stringify({
-			//NOTE: No id or token needed for statistics
-			...args
-		}));
+		}
 	}
 };
 

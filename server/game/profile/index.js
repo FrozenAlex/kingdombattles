@@ -49,17 +49,6 @@ router.post('/untrain', untrainRequest);
 router.post('/recruit', recruitRequest);
 router.get('/recruit', recruitRequest);
 
-/**
- * Profile creation route
- * @param {Express.Request} req 
- * @param {Express.Response} res 
- */
-async function profileCreateRequest(req, res) {
-	//separate this section so it can be used elsewhere too
-	//check ID, username and token match (only the profile's owner can create it)
-	pool.query('SELECT accountId FROM sessions WHERE accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;', [body.username, body.token])
-};
-
 
 async function profileRequest(req, res) {
 	let user = req.session.user;

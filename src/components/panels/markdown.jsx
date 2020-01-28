@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactMarkdown from 'react-markdown/with-html';
+import Axios from 'axios';
 
 class Markdown extends React.Component {
 	constructor(props) {
@@ -26,24 +27,19 @@ class Markdown extends React.Component {
 		}
 	}
 
-	sendRequest(url, args = {}) {
-		//build the XHR
-		let xhr = new XMLHttpRequest();
-		xhr.open('GET', url, true);
-
-		xhr.onreadystatechange = () => {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					//on success
-					this.setState({ data: xhr.responseText });
-				}
-				else if (this.props.setWarning) {
-					this.props.setWarning(xhr.responseText);
-				}
+	async sendRequest(url, args = {}) {
+		try {
+			let response = await Axios.get(url, {
+				params: args
+			});
+			this.setState({ data: response.data });
+		} catch (e) {
+			if (e.response && e.response.data) {
+				this.props.setWarning(e.response.data)
+			}	else{
+				console.error(e)
 			}
-		};
-
-		xhr.send();
+		}
 	}
 };
 
