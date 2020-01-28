@@ -143,7 +143,7 @@ async function recruitRequest(id) {
     }
 
     //update the profile with the new data (gaining 1 recruit)
-    pool.promise().query(
+    await pool.promise().query(
         'UPDATE profiles SET recruits = recruits + 1, lastRecruitTime = CURRENT_TIMESTAMP() WHERE accountId	= ?;', [id])
 
     return false
