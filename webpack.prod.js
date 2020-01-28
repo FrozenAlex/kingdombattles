@@ -30,11 +30,21 @@ module.exports = env => {
 					}
 				},
 				{
-					test: /\.(css|scss|sass)$/,
+					test: /\.(css)$/,
 					use: [
 						MiniCssExtractPlugin.loader,
 						"css-loader",
-						"sass-loader"
+						{
+							loader: 'postcss-loader',
+							options: {
+								// parser: 'sugarss',
+								plugins: (loader) => [
+									require('postcss-import')({ root: loader.resourcePath }),
+									require('postcss-preset-env')(),
+									require('cssnano')()
+								  ]
+							}
+						}
 					]
 				},
 				{

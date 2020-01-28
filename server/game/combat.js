@@ -32,7 +32,7 @@ async function attackRequest(req, res) {
 		'SELECT accountId FROM profiles WHERE accountId IN (SELECT id FROM accounts WHERE username = ?);', [req.body.defender]))[0]
 
 	if (results.length !== 1) {
-		res.status(400).write(log('Invalid defender credentials', req.body.id, req.body.attacker, req.body.defender));
+		res.status(400).write(log('Invalid defender credentials', attacker.id, attacker.username, req.body.defender));
 		res.end();
 		return;
 	}
@@ -42,7 +42,7 @@ async function attackRequest(req, res) {
 	//verify that the attacker has enough soldiers
 	let attackerSoldiers = (await pool.promise().query('SELECT soldiers FROM profiles WHERE accountId = ?;', [attacker.id]))[0]
 	if (attackerSoldiers[0].soldiers <= 0) {
-		res.status(400).write(log('Not enough soldiers', req.body.attacker, req.body.defender, attackerSoldiers[0].soldiers));
+		res.status(400).write(log('Not enough soldiers', attacker.id, req.body.defender, attackerSoldiers[0].soldiers));
 		res.end();
 		return;
 	}
@@ -50,32 +50,30 @@ async function attackRequest(req, res) {
 	let attackingUnits = attackerSoldiers[0].soldiers;
 
 	//verify that the attacker is not already attacking someone
-	let attacking = await isAttacking(req.body.attacker)
+	let attacking = await isAttacking(attacker.id)
 	if (attacking) {
-		res.status(400).write(log('You are already attacking someone', req.body.id, req.body.attacker));
+		res.status(400).write(log('You are already attacking someone', attacker.id, attacker.username));
 		res.end();
 		return;
 	}
 
 	//create the pending attack record
-	await pool.promise().query('INSERT INTO pendingCombat (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 60 * ? SECOND), ?, ?, ?);', [attackingUnits, req.body.id, defenderId, attackingUnits])
+	await pool.promise().query('INSERT INTO pendingCombat (eventTime, attackerId, defenderId, attackingUnits) VALUES (DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 60 * ? SECOND), ?, ?, ?);', [attackingUnits, attacker.id, defenderId, attackingUnits])
 
 	res.status(200).json({
 		status: 'attacking',
-		attacker: req.body.attacker,
+		attacker: attacker.id,
 		defender: req.body.defender,
-		msg: log('Attacking', req.body.attacker, req.body.defender)
+		msg: log('Attacking', attacker.username, req.body.defender)
 	});
 	res.end();
 
-	logActivity(req.body.id);
-
-
+	logActivity(attacker.id);
 };
 
 async function attackStatusRequest(req, res) {
-
-	let attacking = await isAttacking(req.body.id)
+	let user = req.session.user;
+	let attacking = await isAttacking(req.body.id || user.id)
 	res.status(200).json({
 		status: attacking ? 'attacking' : 'idle',
 		defender: attacking

@@ -4,7 +4,7 @@ import Loadable from 'react-loadable';
 
 import './../axios.js'
 // Styles 
-import '../styles/index.scss';
+import '../styles/index.css';
 
 import Footer from './panels/footer.jsx';
 

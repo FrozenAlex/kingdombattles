@@ -75,7 +75,16 @@ module.exports = env => {
 					use: [
 						"style-loader",
 						"css-loader",
-						"sass-loader"
+						{
+							loader: 'postcss-loader',
+							options: {
+								// parser: 'sugarss',
+								plugins: (loader) => [
+									require('postcss-import')({ root: loader.resourcePath }),
+									require('postcss-preset-env')()
+								  ]
+							}
+						}
 					]
 				},
 				{

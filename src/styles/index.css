@@ -1,4 +1,4 @@
-@import './reset.scss'; // Reset css
+/* @import './reset.css';  */
 /* global defaults */
 * {
 	margin: 0;
@@ -372,27 +372,19 @@ pre {
 }
 
 .marquee {
-	-moz-animation: marquee 20s linear infinite;
-	-webkit-animation: marquee 20s linear infinite;
 	animation: marquee 20s linear infinite;
 }
 
 .marquee.fast { /* for smaller text regions */
-	-moz-animation: marquee 10s linear infinite;
-	-webkit-animation: marquee 10s linear infinite;
 	animation: marquee 10s linear infinite;
 }
 
 @media screen and (max-width: 480px) { /* comfortable speed based on screen size */
 	.marquee {
-		-moz-animation: marquee 10s linear infinite;
-		-webkit-animation: marquee 10s linear infinite;
 		animation: marquee 10s linear infinite;
 	}
 
 	.marquee.fast {
-		-moz-animation: marquee 5s linear infinite;
-		-webkit-animation: marquee 5s linear infinite;
 		animation: marquee 5s linear infinite;
 	}
 }
@@ -409,13 +401,9 @@ pre {
 
 @keyframes marquee {
 	0% {
-		-moz-transform: translateX(100%);
-		-webkit-transform: translateX(100%);
 		transform: translateX(100%)
 	}
 	100% {
-		-moz-transform: translateX(-100%);
-		-webkit-transform: translateX(-100%);
 		transform: translateX(-100%);
 	}
 }
