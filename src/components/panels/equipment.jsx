@@ -80,7 +80,7 @@ class Equipment extends React.Component {
 			this.setState({ data: Object.assign({}, this.state.data, response.data) });
 		} catch (e) {
 			if (e.response && e.response.data) {
-				this.setWarning(e.response.data)
+				this.props.setWarning(e.response.data)
 			}	else{
 				console.error(e)
 			}
