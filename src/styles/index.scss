@@ -1,3 +1,4 @@
+@import './reset.scss'; // Reset css
 /* global defaults */
 * {
 	margin: 0;
@@ -349,7 +350,7 @@ pre {
 }
 
 .rainbowText {
-	-webkit-background-clip: text;
+	background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-image: -webkit-gradient(linear, left top, left bottom,
 		color-stop(0.00, red),

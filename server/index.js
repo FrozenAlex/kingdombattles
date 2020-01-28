@@ -20,6 +20,10 @@ app.use(compression({
 	level: 6
 }))
 
+// Don't cache index.html
+app.get('/', (req, res)=>{
+	res.sendFile(path.join(__dirname, "../dist/index.html"))
+})
 // Static files
 app.use('/', express.static(path.resolve(__dirname + '/../dist/'), {
 	maxAge: 1000*60*60*24*30
@@ -80,37 +84,29 @@ let profiles = require('./game/profile/index.js');
 app.use('/api/game/profile', profiles);
 
 // Run gold tick
-require('./game/profile/goldtick').runGoldTick();
+
 // Run the ladder tick
+
+
+// Import services
+let combat = require('./game/combat.js');
+let spying = require('./game/spying.js');
+let badges = require('./game/badges.js');
+
+// Run 'ticks'
+combat.runCombatTick();
+spying.runSpyTick();
+badges.runBadgeTicks();
+require('./game/profile/goldtick').runGoldTick();
 require('./game/profile/ladder').runLadderTick();
 
-let combat = require('./game/combat.js');
-app.post('/api/game/attack', combat.attackRequest);
-app.post('/api/game/attackstatus', combat.attackStatusRequest);
-app.post('/api/game/combatlog', combat.combatLogRequest);
-combat.runCombatTick();
-
-let spying = require('./game/spying.js');
-app.post('/api/game/spy/', spying.spyRequest);
-app.post('/api/game/spy/status', spying.spyStatusRequest);
-app.post('/api/game/spy/log', spying.spyLogRequest);
-spying.runSpyTick();
-
-let equipment = require('./game/equipment.js');
-app.post('/api/game/equipment/', equipment.equipmentRequest);
-app.post('/api/game/equipment/purchase', equipment.purchaseRequest);
-app.post('/api/game/equipment/sell', equipment.sellRequest);
-
-let badges = require('./game/badges.js');
-app.post('/api/game/badges/owned', badges.ownedRequest);
-app.post('/api/game/badges/active', badges.selectActiveBadge);
-badges.runBadgeTicks();
+// Apply game routes
+let game = require('./game');
+app.use('/api/game', game)
 
 //a bit of fun
 const taglineEngine = replacement(require('./taglines.json'));
-app.get('/api/tagline', (req, res) => {
-	res.send(taglineEngine('tagline'));
-});
+app.get('/api/tagline', (req, res) => {res.send(taglineEngine('tagline'));});
 
 app.post('/api/easteregg', (req, res) => {
 	if (req.body.query === 'search') {

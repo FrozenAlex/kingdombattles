@@ -37,20 +37,17 @@ let training = require('./training.js');
 var router = express.Router();
 
 router.post('/ladder', ladderRequest); // Leaderboard
+router.get('/', profileRequest);
+router.post('/', profileRequest);
 
 // Require auth for all of the routes below
 router.use(require('./../../middleware/auth').requireAuth);
 
-router.post('/', profileRequest);
-router.get('/', profileRequest);
-router.get('/name/:username', profileRequest);
-// router.post('/create', profileCreateRequest);
+router.get('/u/:username', profileRequest);
 router.post('/train', trainRequest);
 router.post('/untrain', untrainRequest);
 router.post('/recruit', recruitRequest);
 router.get('/recruit', recruitRequest);
-
-
 
 /**
  * Profile creation route
@@ -60,20 +57,34 @@ router.get('/recruit', recruitRequest);
 async function profileCreateRequest(req, res) {
 	//separate this section so it can be used elsewhere too
 	//check ID, username and token match (only the profile's owner can create it)
-		pool.query('SELECT accountId FROM sessions WHERE accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;', [body.username, body.token])
+	pool.query('SELECT accountId FROM sessions WHERE accountId IN (SELECT id FROM accounts WHERE username = ?) AND token = ?;', [body.username, body.token])
 };
 
 
 async function profileRequest(req, res) {
 	let user = req.session.user;
 	//separate this section so it can be used elsewhere too
+	let profile; 
+	// If authorized
+	if (user) {
+		let requestedUser = req.params.username || req.body.username || user.username;
+		let private = (user && user.username === requestedUser);
+		profile = await ProfileFunctions.getProfile(requestedUser, private)
+		logActivity(user.id); // Track user
+	} else {
+		// If not authorized
+		let requestedUser = req.params.username || req.body.username;
+		// If not null
+		if (requestedUser) {
+			profile = await ProfileFunctions.getProfile(requestedUser, false)
+		} else {
+			// If none specified it means user is on /profile/ and session is expired
+			res.status(440);
+			res.write('Unauthorized')
+			return res.end()
+		}
+	}
 
-	// Check if requesting your own profile
-	let requestedUser = req.params.username || req.body.username || user.username;
-
-	let private = (user.username === requestedUser);
-
-	let profile = await ProfileFunctions.getProfile(requestedUser, private)
 	if (profile) {
 		res.status(200)
 		res.json(profile)
@@ -195,6 +206,7 @@ async function ladderRequest(req, res) {
 	if (users.length === 0) {
 		res.status(200).json([]);
 		res.end();
+		return
 	}
 
 	for (let i = 0; i < users.length; i++) {

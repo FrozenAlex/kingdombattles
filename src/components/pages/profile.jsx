@@ -23,7 +23,7 @@ class Profile extends React.Component {
 			warning: '', //TODO: unified warning?
 		};
 
-		this.sendRequest('/api/game/profile', { username: this.state.params.username ? this.state.params.username : this.props.account.username });
+		this.sendRequest('/api/game/profile', { username: this.state.params.username});
 	}
 
 	componentWillUnmount() {
