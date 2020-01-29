@@ -81,8 +81,8 @@ class Profile extends React.Component {
 						<div className='warning' style={warningStyle}>
 							<p>{this.state.warning}</p>
 						</div>
-
 						<MainPanel />
+						<Markdown url={require('../../assets/content/instructions.md').default} setWarning={this.setWarning.bind(this)} />
 					</div>
 				</div>
 			</div>
@@ -170,8 +170,6 @@ class Profile extends React.Component {
 				</div>
 
 				<div className='break' />
-
-				<Markdown url={require('../../assets/content/instructions.md').default} setWarning={this.setWarning.bind(this)} />
 			</div>
 		);
 	}
