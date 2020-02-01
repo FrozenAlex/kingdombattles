@@ -1,4 +1,12 @@
 tasks:
-  - init: npm install && npm run build
+  - init: >
+      npm install && npm run build &&
+      mysql -e "create database kingdombattles;" &&
+      mysql -e "CREATE USER 'kingdombattles'@'localhost' IDENTIFIED BY 'kingdombattles';" &&
+      mysql -e "CREATE USER 'kingdombattles'@'localhost' IDENTIFIED BY 'kingdombattles';" &&
+      mysql -e "GRANT ALL PRIVILEGES on kingdombattles.* TO 'kingdombattles'@'localhost'" &&
+      cp .envdev .env &&
+      echo "WEB_ADDRESS=\"${GITPOD_WORKSPACE_URL}:3000\"" >> .env &&
+      npm run db:create
     command: npm run start
 image: gitpod/workspace-mysql
