@@ -5,7 +5,10 @@ tasks:
       mysql -e "CREATE USER 'kingdombattles'@'localhost' IDENTIFIED BY 'kingdombattles';" &&
       mysql -e "GRANT ALL PRIVILEGES on kingdombattles.* TO 'kingdombattles'@'localhost'" &&
       cp .envdev .env &&
-      echo "WEB_ADDRESS=\"${GITPOD_WORKSPACE_URL}:3000\"" >> .env &&
+      echo "WEB_ADDRESS=\"$(gp url 3000)\"" >> .env &&
       npm run db:create
     command: npm run start
 image: gitpod/workspace-mysql
+ports:
+  - port: 3000
+  - port: 3001
