@@ -17,7 +17,7 @@ module.exports = env => {
 		},
 		devServer: {
 			contentBase: path.join(__dirname, 'dist/'),
-			compress: false,
+            compress: true,
 			port: 3001,
 			proxy: {
 				'/api/': 'http://localhost:3000/',
@@ -45,10 +45,11 @@ module.exports = env => {
 			},
 			host: '0.0.0.0',
 			disableHostCheck: true,
-			clientLogLevel: 'silent',
+            clientLogLevel: 'silent',
+            sockPort: (process.env.GITPOD_INSTANCE_ID)? 443 : null , // If running on gitpod
 			historyApiFallback: true,
 			hot: true,
-			injectHot: true
+            injectHot: true
 		},
 		devtool: 'source-map',
 		module: {
