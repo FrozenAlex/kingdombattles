@@ -1,4 +1,6 @@
-#diagnostic system
+-- Fix for no default TIMESTAMP value
+SET SQL_MODE='ALLOW_INVALID_DATES';
+-- diagnostic system
 CREATE TABLE IF NOT EXISTS diagnostics (
 	id INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY UNIQUE,
 	td TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
@@ -218,4 +220,17 @@ CREATE TABLE IF NOT EXISTS bannedEmails (
 
 	email VARCHAR(320) UNIQUE,
 	reason VARCHAR(1000)
+);
+
+
+-- attached social accounts
+CREATE TABLE IF NOT EXISTS social (
+	td TIMESTAMP DEFAULT CURRENT_TIMESTAMP(), -- when it was attached
+	socialId VARCHAR(200), -- social unique id
+	type VARCHAR(20), -- name of social service
+	name VARCHAR(320), -- user real name
+	accountId INTEGER UNSIGNED, -- account attached to the medium
+	email VARCHAR(320), -- email of the user
+	
+	CONSTRAINT FOREIGN KEY fk_accountId(accountId) REFERENCES accounts(id) ON UPDATE CASCADE ON DELETE CASCADE
 );

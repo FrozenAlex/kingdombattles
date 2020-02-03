@@ -1,5 +1,6 @@
 //environment variables
 require('dotenv').config();
+let passport = require('passport')
 
 let pool = require("./../db/pool");
 //libraries
@@ -36,6 +37,20 @@ router.post('/login', loginRequest);
 router.post('/passwordrecover', passwordRecoverRequest);
 router.post('/passwordreset', passwordResetRequest);
 
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+	// Social auth 
+	router.get('/social/googlecallback', passport.authenticate("google", {
+			failureRedirect: '/login'
+		}),
+		function (req, res) {
+			// Successful authentication, redirect home.
+			res.redirect('/');
+		});
+	router.get('/social/google', passport.authenticate('google', {
+		scope: ['profile', 'email']
+	})); // Login redirect
+
+}
 // You need to be authorised to perform such things
 router.use(require('./../middleware/auth').requireAuth)
 
@@ -70,7 +85,7 @@ async function signupRequest(req, res) {
 	}
 
 	//check to see if the email has been banned
-		let results = await pool.promise().query('SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;', [fields.email])
+	let results = await pool.promise().query('SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;', [fields.email])
 
 	//if the email has been banned
 	if (results[0][0].total > 0) {
@@ -123,7 +138,7 @@ async function signupRequest(req, res) {
 		//							html: msgHtml
 	}, (err, reply) => {
 		if (err) { //final check
-			let msg = log('It\'s a test version so here ya go '+ addr, err);
+			let msg = log('It\'s a test version so here ya go ' + addr, err);
 
 			if (!sentinel) {
 				res.status(400).write(msg);
@@ -150,7 +165,7 @@ async function signupRequest(req, res) {
  */
 async function verifyRequest(req, res) {
 	//get the saved data
-		let signupRequests = (await pool.promise().query('SELECT * FROM signups WHERE email = ?;', [req.query.email]))[0]
+	let signupRequests = (await pool.promise().query('SELECT * FROM signups WHERE email = ?;', [req.query.email]))[0]
 
 	//correct number of results
 	if (signupRequests.length !== 1) {
@@ -192,17 +207,10 @@ async function verifyRequest(req, res) {
 
 async function loginRequest(req, res) {
 	//formidable handles forms
-	let fields = (await parseForm(req)).fields;
-
-	//validate email, username and password
-	if (!validateEmail(fields.email) || fields.password.length < 8) {
-		res.status(400).write(log('Invalid login data', fields.email)); //WARNING: NEVER LOG PASSWORDS. EVER.
-		res.end();
-		return;
-	}
+	let fields = req.body
 
 	//check to see if the email has been banned
-		let results = (await pool.promise().query('SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;', [fields.email]))[0]
+	let results = (await pool.promise().query('SELECT COUNT(*) as total FROM bannedEmails WHERE email = ?;', [fields.email]))[0]
 
 	//if the email has been banned
 	if (results.total > 0) {
@@ -230,12 +238,6 @@ async function loginRequest(req, res) {
 		return;
 	}
 
-	// //create the new session
-	let rand = Math.floor(Math.random() * 2000000000);
-
-	// query = 'INSERT INTO sessions (accountId, token) VALUES (?, ?);';
-	// await pool.promise().query(query, [results[0].id, rand])
-
 	req.session.user = {
 		id: results[0].id,
 		username: results[0].username
@@ -246,7 +248,6 @@ async function loginRequest(req, res) {
 		id: results[0].id,
 		email: fields.email,
 		username: results[0].username,
-		token: rand, // Not used anymore but we'll leave it here
 		msg: log('Logged in', fields.email, rand)
 	});
 	res.end();
@@ -407,7 +408,7 @@ async function passwordResetRequest(req, res) {
 
 async function privacySettingsRequest(req, res) {
 	//fetch each privacy setting
-		let promotions = (await pool.promise().query('SELECT promotions FROM accounts WHERE id = ?;', [req.session.user.id]))[0]
+	let promotions = (await pool.promise().query('SELECT promotions FROM accounts WHERE id = ?;', [req.session.user.id]))[0]
 	res.status(200).json({
 		promotions: promotions[0].promotions
 	});

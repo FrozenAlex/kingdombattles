@@ -12,6 +12,10 @@ let bodyParser = require('body-parser');
 let path = require('path');
 
 let pool = require("./db/pool");
+let passport = require('./account/authStrategies.js');
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 let MyStore = require('./util/sessionStore')(expressSession)
 

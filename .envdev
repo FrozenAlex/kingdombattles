@@ -5,3 +5,6 @@ DB_NAME=kingdombattles
 DB_PORT=3306
 
 WEB_ADDRESS=localhost
+
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""

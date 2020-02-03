@@ -25,6 +25,9 @@
     "> 2%",
     "not IE <=11"
   ],
+  "sideEffects": [
+    "*.css"
+  ],
   "dependencies": {
     "axios": "^0.19.2",
     "bcryptjs": "^2.4.3",
@@ -39,6 +42,9 @@
     "forever": "^2.0.0",
     "formidable": "^1.2.1",
     "mysql2": "^2.1.0",
+    "passport": "^0.4.1",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-local": "^1.0.0",
     "query-string": "^6.10.1",
     "sendmail": "^1.4.1"
   },
