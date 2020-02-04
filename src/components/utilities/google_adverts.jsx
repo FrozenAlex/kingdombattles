@@ -1,6 +1,6 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
-class GoogleAdverts extends React.Component {
+class GoogleAdverts extends Component {
 	comonentDidMount() {
 		(adsbygoogle = window.adsbygoogle || []).push({});
 	}

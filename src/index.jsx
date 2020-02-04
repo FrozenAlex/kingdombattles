@@ -1,34 +1,36 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
-import { createStore, applyMiddleware } from 'redux';
-import thunk from 'redux-thunk';
+import { h, Component, render } from 'preact';
 
-import DevTools from './dev_tools.jsx';
+import createStore from 'unistore'
+import { Provider } from 'unistore/preact'
+
+
 import App from './components/app.jsx';
-
-import reducer from './reducers/reducer.js';
 
 //persistence
 let ITEM_NAME = 'account.kingdombattles';
 let account = localStorage.getItem(ITEM_NAME);
-account = account ? JSON.parse(account) : {};
+account = account ? JSON.parse(account) : null; // Make it null to simplify the logic
 
-var store = createStore(
-	reducer,
-	{ account: account }, //initial state
-	applyMiddleware(thunk)
-);
+// Profile persists too xD
+let profile = localStorage.getItem("profile.kingdombattles");
+profile = profile ? JSON.parse(profile) : null;
 
-//persistence
+let initialState = { account: account, profile:profile}
+
+let store = createStore(initialState);
+
+// //persistence
 store.subscribe(() => {
 	localStorage.setItem(ITEM_NAME, JSON.stringify(store.getState().account));
+	localStorage.setItem("profile.kingdombattles", JSON.stringify(store.getState().profile));
 });
 
 //start the process
-ReactDOM.render(
+render(
 	<Provider store={store}>
-		<App />
+		<div>
+			<App />
+		</div>
 	</Provider>,
 	document.querySelector("#root")
 );

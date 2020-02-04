@@ -1,10 +1,11 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
-import Axios from 'axios';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 
-class Equipment extends React.Component {
+// import PropTypes from 'prop-types';
+import Axios from 'axios';
+import { connect } from 'unistore/preact';
+
+class Equipment extends Component {
 	constructor(props) {
 		super(props);
 
@@ -25,7 +26,7 @@ class Equipment extends React.Component {
 			return (
 				<div className='panel'>
 					<p className='centered'>You have no scientists!</p>
-					<p className='centered'>Go and <Link to='/profile/'>train some!</Link></p>
+					<p className='centered'>Go and <Link href='/profile/'>train some!</Link></p>
 				</div>
 			);
 		}
@@ -121,28 +122,5 @@ class Equipment extends React.Component {
 	}
 };
 
-Equipment.propTypes = {
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired,
 
-	setWarning: PropTypes.func,
-	getFetch: PropTypes.func,
-	onSuccess: PropTypes.func
-};
-
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-Equipment = connect(mapStoreToProps, mapDispatchToProps)(Equipment);
-
-export default withRouter(Equipment);
+export default connect('account')(Equipment);

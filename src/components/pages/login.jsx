@@ -1,10 +1,11 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link, route } from 'preact-router';
+
 
 //panels
 import LoginPanel from '../panels/login.jsx';
 
-class Login extends React.Component {
+class Login extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -15,11 +16,11 @@ class Login extends React.Component {
 	render() {
 		return (
 			<div className='page constrained'>
-				<LoginPanel onSuccess={(msg) => this.props.history.push('/profile')} />
-				<Link to='/' className='centered'>Return Home</Link>
+				<LoginPanel onSuccess={(msg) => route('/profile', true)} />
+				<Link href='/' className='centered'>Return Home</Link>
 			</div>
 		);
 	}
 };
 
-export default withRouter(Login);
+export default Login;

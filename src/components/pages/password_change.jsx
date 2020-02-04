@@ -1,11 +1,11 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
+import { Link, route } from 'preact-router';
 
 //panels
 import PasswordChangePanel from '../panels/password_change.jsx';
+import { connect } from 'unistore/preact';
 
-class PasswordChange extends React.Component {
+class PasswordChange extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -14,8 +14,8 @@ class PasswordChange extends React.Component {
 	}
 
 	componentDidMount() {
-		if (!this.props.loggedIn) {
-			this.props.history.push('/');
+		if (!this.props.account) {
+			route('/', true);
 		}
 	}
 
@@ -35,24 +35,10 @@ class PasswordChange extends React.Component {
 		return (
 			<div className='page constrained'>
 				<Panel />
-				<Link to='/' className='centered'>Return Home</Link>
+				<Link href='/' className='centered'>Return Home</Link>
 			</div>
 		);
 	}
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		loggedIn: store.account.id !== 0
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-PasswordChange = connect(mapStoreToProps, mapDispatchToProps)(PasswordChange);
-
-export default withRouter(PasswordChange);
+export default connect('account')(PasswordChange);

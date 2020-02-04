@@ -1,9 +1,8 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import ReactMarkdown from 'react-markdown/with-html';
+import {Component, h} from 'preact';
+import Markdown from 'markdown-to-jsx';
 import Axios from 'axios';
 
-class Markdown extends React.Component {
+class Markdown extends Component {
 	constructor(props) {
 		super(props);
 
@@ -21,7 +20,7 @@ class Markdown extends React.Component {
 
 	render() {
 		if (this.state.data) {
-			return (<ReactMarkdown source={this.state.data} escapeHtml={false} {...this.props} />);
+			return (<Markdown children={this.state.data} {...this.props} />);
 		} else {
 			return (<p className='centered'>Loading markdown...</p>);
 		}
@@ -41,12 +40,6 @@ class Markdown extends React.Component {
 			}
 		}
 	}
-};
-
-Markdown.propTypes = {
-	source: PropTypes.string,
-	url: PropTypes.string,
-	setWarning: PropTypes.func
 };
 
 export default Markdown;

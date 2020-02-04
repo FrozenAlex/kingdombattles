@@ -1,6 +1,6 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
-class ProgressiveRainbowText extends React.Component {
+class ProgressiveRainbowText extends Component {
 	constructor(props) {
 		super(props);
 

@@ -1,23 +1,11 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown/with-html';
+import {Component, h} from 'preact';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
-import Markdown from '../panels/markdown.jsx';
+import RawHTML from '../utilities/RawHTML.jsx';
 
-class TaskList extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			warning: ''
-		};
-	}
-
+class TaskList extends Component {
 	render() {
-		let warningStyle = {
-			display: this.state.warning.length > 0 ? 'flex' : 'none'
-		};
-
 		return (
 			<div className='page'>
 				<div className='sidePanelPage'>
@@ -26,20 +14,12 @@ class TaskList extends React.Component {
 					</div>
 
 					<div className='mainPanel'>
-						<div className='warning' style={warningStyle}>
-							<p>{this.state.warning}</p>
-						</div>
-
 						<h1 className='centered'>Kingdom Battles Developer Task List</h1>
-						<Markdown url={require('./../../assets/content/task_list.md').default} setWarning={this.setWarning.bind(this)} />
+						<RawHTML html={require('./../../assets/content/task_list.md')}/>
 					</div>
 				</div>
 			</div>
 		);
-	}
-
-	setWarning(s) {
-		this.setState({ warning: s });
 	}
 };
 

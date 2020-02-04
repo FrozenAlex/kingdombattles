@@ -1,16 +1,15 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
 
-//actions
-import { storeScientists, storeGold, clearProfile } from '../../actions/profile.js';
 
 import Axios from 'axios';
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import EquipmentPanel from '../panels/equipment.jsx';
+import { connect } from 'unistore/preact';
+import { route } from 'preact-router';
 
-class Equipment extends React.Component {
+class Equipment extends Component {
 	constructor(props) {
 		super(props);
 
@@ -23,8 +22,8 @@ class Equipment extends React.Component {
 	}
 
 	componentDidMount() {
-		if (!this.props.loggedIn) {
-			this.props.history.replace('/login');
+		if (!this.props.account) {
+			route('/login/', true);
 		}
 		this.getProfile(this.props.username);
 	}
@@ -58,7 +57,7 @@ class Equipment extends React.Component {
 					</div>
 
 					<h1 className='centered'>Equipment</h1>
-					<p className='centered'>Your Scientists: {this.props.scientists} / Your Gold: {this.props.gold}</p>
+					<p className='centered'>Your Scientists: {this.props.profile.scientists} / Your Gold: {this.props.profile.gold}</p>
 
 					<EquipmentPanel
 						setWarning={this.setWarning.bind(this)}
@@ -81,41 +80,12 @@ class Equipment extends React.Component {
 		let response = await Axios.get(`/api/game/profile/${username}`)
 
 		//on success
-		this.props.storeScientists(response.data.scientists);
-		this.props.storeGold(response.data.gold);
+		// TODO: Implement storing scientists to store
+		// this.props.storeScientists(response.data.scientists);
+		// this.props.storeGold(response.data.gold);
 	}
 
 };
 
-Equipment.propTypes = {
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired,
-	username: PropTypes.string.isRequired,
-	loggedIn: PropTypes.bool.isRequired,
-	storeScientists: PropTypes.func.isRequired,
-	storeGold: PropTypes.func.isRequired,
-	clearProfile: PropTypes.func.isRequired
-};
 
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token,
-		username: store.account.username,
-		loggedIn: store.account.id !== 0,
-		scientists: store.profile.scientists,
-		gold: store.profile.gold
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		storeScientists: (x) => dispatch(storeScientists(x)),
-		storeGold: (x) => dispatch(storeGold(x)),
-		clearProfile: () => dispatch(clearProfile())
-	};
-};
-
-Equipment = connect(mapStoreToProps, mapDispatchToProps)(Equipment);
-
-export default Equipment;
+export default connect(['account', 'profile'])(Equipment);

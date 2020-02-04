@@ -1,8 +1,8 @@
-import React from 'react';
+import {Component, h} from 'preact';
 import Badge from './badge.jsx';
 import BadgeData from './../../assets/badges.js'
 
-class BadgeText extends React.Component {
+class BadgeText extends Component {
 	render() {
 		if (!this.props.name) {
 			return (

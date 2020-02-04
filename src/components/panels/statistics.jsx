@@ -1,8 +1,8 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
+// import PropTypes from 'prop-types';
 import Axios from 'axios';
 
-class Statistics extends React.Component {
+class Statistics extends Component {
 	constructor(props) {
 		super(props);
 
@@ -39,11 +39,6 @@ class Statistics extends React.Component {
 			}
 		}
 	}
-};
-
-Statistics.propTypes = {
-	setWarning: PropTypes.func,
-	getFetch: PropTypes.func
 };
 
 export default Statistics;

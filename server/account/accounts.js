@@ -248,7 +248,7 @@ async function loginRequest(req, res) {
 		id: results[0].id,
 		email: fields.email,
 		username: results[0].username,
-		msg: log('Logged in', fields.email, rand)
+		msg: log('Logged in', fields.email)
 	});
 	res.end();
 

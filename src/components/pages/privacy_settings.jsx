@@ -1,12 +1,12 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import PrivacySettingsPanel from '../panels/privacy_settings.jsx';
+import { route } from 'preact-router';
+import { connect } from 'unistore/preact';
 
-class PrivacySettings extends React.Component {
+class PrivacySettings extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -16,8 +16,8 @@ class PrivacySettings extends React.Component {
 	}
 
 	componentDidMount() {
-		if (!this.props.loggedIn) {
-			this.props.history.replace('/login');
+		if (!this.props.account) {
+			route('/login/', true);
 		}
 	}
 
@@ -59,27 +59,6 @@ class PrivacySettings extends React.Component {
 	}
 };
 
-PrivacySettings.propTypes = {
-	loggedIn: PropTypes.bool.isRequired,
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired
-};
-
-const mapStoreToProps = (store) => {
-	return {
-		loggedIn: store.account.id !== 0,
-		id: store.account.id,
-		token: store.account.token
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-PrivacySettings = connect(mapStoreToProps, mapDispatchToProps)(PrivacySettings);
 
 
-export default PrivacySettings;
+export default connect('account')(PrivacySettings);

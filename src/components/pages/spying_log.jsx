@@ -1,21 +1,21 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
+
 import queryString from 'query-string';
 import PropTypes from 'prop-types';
 
-//actions
-import { storeSpies, clearProfile } from '../../actions/profile.js';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import PagedSpyingLog from '../panels/paged_spying_log.jsx';
 import Axios from 'axios';
+import { connect } from 'unistore/preact';
+import { route } from 'preact-router';
 
-class SpyingLog extends React.Component {
+class SpyingLog extends Component {
 	constructor(props) {
 		super(props);
 
-		let params = queryString.parse(props.location.search);
+		let params = queryString.parse(props.url);
 
 		this.state = {
 			params: params,
@@ -31,13 +31,9 @@ class SpyingLog extends React.Component {
 	}
 
 	componentDidMount() {
-		if (!this.props.loggedIn) {
-			this.props.history.replace('/login');
+		if (!this.props.account) {
+			route('/login/', true)
 		}
-	}
-
-	componentWillUnmount() {
-		this.props.clearProfile();
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {
@@ -99,7 +95,7 @@ class SpyingLog extends React.Component {
 	increment() {
 		let start = this.state.start + this.state.length;
 
-		this.props.history.push(`${this.props.location.pathname}?log=${start}`);
+		route(`${this.props.path}?log=${start}`, true)
 	}
 
 	decrement() {
@@ -110,7 +106,7 @@ class SpyingLog extends React.Component {
 			return;
 		}
 
-		this.props.history.push(`${this.props.location.pathname}?log=${start}`);
+		route(`${this.props.path}?log=${start}`, true)
 	}
 
 
@@ -118,9 +114,13 @@ class SpyingLog extends React.Component {
 	async sendRequest(url, args = {}) { //send a unified request, using my credentials
 		try {
 			let response = await Axios.post(url, args);
-			this.props.storeSpies(response.spies);
+			// this.props.storeSpies(response.spies);
 		} catch (e) {
-			this.setWarning(e.response.data)
+			if (e.response && e.response.data) {
+				this.setWarning(e.response.data)
+			} 	else{
+				console.error(e)
+			}
 		}
 	}
 
@@ -138,7 +138,7 @@ class SpyingLog extends React.Component {
 				return;
 			}
 
-			this.props.history.replace(`${this.props.location.pathname}?log=${start}`);
+			route(`${this.props.path}?log=${start}`, true)
 		}
 	}
 
@@ -152,22 +152,4 @@ SpyingLog.propTypes = {
 	loggedIn: PropTypes.bool.isRequired
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		username: store.account.username,
-		loggedIn: store.account.id !== 0,
-		username: store.account.username,
-		spies: store.profile.spies
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		storeSpies: (x) => dispatch(storeSpies(x)),
-		clearProfile: () => dispatch(clearProfile())
-	};
-};
-
-SpyingLog = connect(mapStoreToProps, mapDispatchToProps)(SpyingLog);
-
-export default SpyingLog;
+export default connect('account')(SpyingLog);

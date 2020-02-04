@@ -1,11 +1,11 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
 
 import SpyingLogRecord from './spying_log_record.jsx';
 import Axios from 'axios';
+import { connect } from 'unistore/preact';
 
-class PagedSpyingLog extends React.Component {
+class PagedSpyingLog extends Component {
 	constructor(props) {
 		super(props);
 
@@ -56,32 +56,18 @@ class PagedSpyingLog extends React.Component {
 	}
 };
 
-PagedSpyingLog.propTypes = {
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired,
+// PagedSpyingLog.propTypes = {
+// 	id: PropTypes.number.isRequired,
+// 	token: PropTypes.number.isRequired,
 
-	username: PropTypes.string.isRequired,
-	start: PropTypes.number.isRequired,
-	length: PropTypes.number.isRequired,
+// 	username: PropTypes.string.isRequired,
+// 	start: PropTypes.number.isRequired,
+// 	length: PropTypes.number.isRequired,
 
-	setWarning: PropTypes.func,
-	getFetch: PropTypes.func,
-	onReceived: PropTypes.func
-};
+// 	setWarning: PropTypes.func,
+// 	getFetch: PropTypes.func,
+// 	onReceived: PropTypes.func
+// };
 
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	};
-};
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-PagedSpyingLog = connect(mapStoreToProps, mapDispatchToProps)(PagedSpyingLog);
-
-export default PagedSpyingLog;
+export default connect('account')(PagedSpyingLog);

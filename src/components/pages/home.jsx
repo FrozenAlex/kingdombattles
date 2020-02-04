@@ -1,12 +1,13 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import { Component, h } from 'preact';
+import { Link } from 'preact-router';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
-import Markdown from '../panels/markdown.jsx';
 import News from '../panels/news.jsx';
+import Markdown from 'markdown-to-jsx'
+import RawHTML from '../utilities/RawHTML.jsx';
 
-class Home extends React.Component {
+class Home extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -35,7 +36,7 @@ class Home extends React.Component {
 			if (this.state.tagline === 'rainbow') {
 				return (<em><p className='centered rainbowText'>I hope this CSS rainbow effect works in all browsers!</p></em>);
 			}
-			return (<div className='centered'><em><Markdown source={this.state.tagline} escapeHtml={true} /></em></div>);
+			return (<div className='centered'><em><Markdown children={this.state.tagline} /></em></div>);
 		}
 
 		return (
@@ -52,10 +53,10 @@ class Home extends React.Component {
 						<h1 className='centered'>About</h1>
 						<Tagline />
 						<br />
-						<Markdown url={require('./../../assets/content/blurb.md').default} />
+						<RawHTML html={require('./../../assets/content/blurb.md')}></RawHTML>
 						<h1 className='centered'>News</h1>
 						<News length={3}/>
-						<p className='right'><Link to='/news/'>See all news...</Link></p>
+						<p className='right'><Link href='/news/'>See all news...</Link></p>
 					</div>
 				</div>
 			</div>
@@ -67,4 +68,4 @@ class Home extends React.Component {
 	}
 };
 
-export default withRouter(Home);
+export default Home;

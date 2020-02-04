@@ -1,34 +1,35 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 import queryString from 'query-string';
 
 
 //actions
-import { storeProfile, clearProfile } from '../../actions/profile.js';
+// import { storeProfile, clearProfile } from '../../actions/profile.js';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import AttackButton from '../panels/attack_button.jsx';
-import Markdown from '../panels/markdown.jsx';
 import BadgeText from '../panels/badge_text.jsx';
+import RawHTML from '../utilities/RawHTML.jsx';
 import Axios from 'axios';
+import { connect } from 'unistore/preact';
+import { actions } from '../../actions/index.js';
 
-class Profile extends React.Component {
+class Profile extends Component {
 	constructor(props) {
 		super(props);
-
+		console.log(this, props)
 		this.state = {
-			params: queryString.parse(props.location.search),
+			params: queryString.parse(props.url),
 			warning: '', //TODO: unified warning?
 		};
 
 		this.sendRequest('/api/game/profile', { username: this.state.params.username});
 	}
 
-	componentWillUnmount() {
-		this.props.clearProfile();
-	}
+	// componentWillUnmount() {
+	// 	this.props.clearProfile();
+	// }
 
 	render() {
 		let warningStyle = {
@@ -38,7 +39,7 @@ class Profile extends React.Component {
 		//side panel stuff
 		let SidePanel;
 
-		if (this.props.account.id) {
+		if (this.props.account) {
 			if (this.props.account.username === this.props.profile.username) {
 				SidePanel = this.MyProfileSidePanel.bind(this);
 			} else {
@@ -51,7 +52,7 @@ class Profile extends React.Component {
 		//main panel
 		let MainPanel;
 
-		if (this.props.account.id) {
+		if (this.props.account) {
 			//logged in
 			if (this.props.account.username === this.props.profile.username) {
 				MainPanel = this.MyProfileMainPanel.bind(this);
@@ -64,7 +65,7 @@ class Profile extends React.Component {
 			}
 		} else {
 			//not logged in
-			if (this.props.profile.username) {
+			if (this.props.profile) {
 				MainPanel = this.LoggedOutMainPanel.bind(this);
 			} else {
 				MainPanel = this.ProfileNotFoundMainPanel.bind(this);
@@ -82,7 +83,7 @@ class Profile extends React.Component {
 							<p>{this.state.warning}</p>
 						</div>
 						<MainPanel />
-						<Markdown url={require('../../assets/content/instructions.md').default} setWarning={this.setWarning.bind(this)} />
+						<RawHTML html={require('../../assets/content/instructions.md')}></RawHTML>
 					</div>
 				</div>
 			</div>
@@ -344,20 +345,18 @@ class Profile extends React.Component {
 	}
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		account: store.account,
-		profile: store.profile,
-	};
-};
+// const mapStoreToProps = (store) => {
+// 	return {
+// 		account: store.account,
+// 		profile: store.profile,
+// 	};
+// };
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		storeProfile: (username, gold, recruits, soldiers, spies, scientists, activeBadge, activeBadgeFilename) => dispatch(storeProfile(username, gold, recruits, soldiers, spies, scientists, activeBadge, activeBadgeFilename)),
-		clearProfile: () => dispatch(clearProfile())
-	};
-};
+// const mapDispatchToProps = (dispatch) => {
+// 	return {
+// 		storeProfile: (username, gold, recruits, soldiers, spies, scientists, activeBadge, activeBadgeFilename) => dispatch(storeProfile(username, gold, recruits, soldiers, spies, scientists, activeBadge, activeBadgeFilename)),
+// 		clearProfile: () => dispatch(clearProfile())
+// 	};
+// };
 
-Profile = connect(mapStoreToProps, mapDispatchToProps)(Profile);
-
-export default withRouter(Profile);
+export default connect(['account', 'profile'], actions)(Profile);

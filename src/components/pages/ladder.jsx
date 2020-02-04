@@ -1,15 +1,16 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
 import queryString from 'query-string';
 
 import CommonLinks from '../panels/common_links.jsx';
 import PagedLadder from '../panels/paged_ladder.jsx';
+import { connect } from 'unistore/preact';
+import { route } from 'preact-router';
 
-class Ladder extends React.Component {
+class Ladder extends Component {
 	constructor(props) {
 		super(props);
 
-		let params = queryString.parse(props.location.search);
+		let params = queryString.parse(props.url);
 
 		this.state = {
 			params: params,
@@ -17,12 +18,6 @@ class Ladder extends React.Component {
 			length: 50,
 			fetch: null
 		};
-	}
-
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
-			this.state.fetch();
-		}
 	}
 
 	render() {
@@ -44,7 +39,7 @@ class Ladder extends React.Component {
 						<PagedLadder
 							start={this.state.start}
 							length={this.state.length}
-							highlightedName={this.props.username}
+							highlightedName={this.props.account.username}
 							getFetch={this.getFetch.bind(this)}
 							onReceived={this.onReceived.bind(this)}
 						/>
@@ -70,8 +65,9 @@ class Ladder extends React.Component {
 
 	increment() {
 		let start = this.state.start + this.state.length;
-
-		this.props.history.push(`${this.props.location.pathname}?rank=${start}`);
+		console.log(this)
+		route(`${this.props.path}?rank=${start}`, true);
+		
 	}
 
 	decrement() {
@@ -82,7 +78,7 @@ class Ladder extends React.Component {
 			return;
 		}
 
-		this.props.history.push(`${this.props.location.pathname}?rank=${start}`);
+		route(`${this.props.path}?rank=${start}`, true);
 	}
 
 	//bound callbacks
@@ -104,18 +100,5 @@ class Ladder extends React.Component {
 	}
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		username: store.account.username
-	};
-};
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-Ladder = connect(mapStoreToProps, mapDispatchToProps)(Ladder);
-
-export default Ladder;
+export default connect('account')(Ladder);

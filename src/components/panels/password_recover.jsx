@@ -1,8 +1,8 @@
-import React from 'react';
+import {Component, h} from 'preact';
 import { validateEmail } from '../../../common/utilities.js'; //TODO: move utilities to a better position
 import PropTypes from 'prop-types';
 
-class PasswordRecover extends React.Component {
+class PasswordRecover extends Component {
 	constructor(props) {
 		super(props);
 

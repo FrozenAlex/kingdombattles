@@ -1,10 +1,9 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown/with-html';
-import PropTypes from 'prop-types';
+import { h, Component } from 'preact';
+import Markdown from 'markdown-to-jsx';
 import Axios from 'axios';
 
 // Multipurpose news container
-class News extends React.Component {
+class News extends Component {
 	constructor(props) {
 		super(props);
 
@@ -34,7 +33,7 @@ class News extends React.Component {
 		return (
 			<div className='panel'>
 				{Object.keys(this.state.news).map((key) => <div key={key}>
-					<ReactMarkdown source={this.state.news[key]} escapeHtml={false} />
+					<Markdown children={this.state.news[key]}/>
 					<hr className='newsLine' />
 				</div>)}
 			</div>
@@ -44,7 +43,7 @@ class News extends React.Component {
 	// Gets the list of news
 	async getNews(length) {
 		let news = await Axios.get('/api/news', {
-			params: {  length:length || 4 }
+			params: { length: length || 4 }
 		});
 		this.setState({ news: news.data });
 	}
@@ -55,8 +54,5 @@ class News extends React.Component {
 	}
 };
 
-News.propTypes = {
-	length: PropTypes.number
-};
 
 export default News;

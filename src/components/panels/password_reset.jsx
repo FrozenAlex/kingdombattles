@@ -1,9 +1,7 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import { sessionChange } from '../../actions/account.js';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
 
-class PasswordReset extends React.Component {
+class PasswordReset extends Component {
 	constructor(props) {
 		super(props);
 

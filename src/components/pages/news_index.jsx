@@ -1,11 +1,11 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import Axios from 'axios';
 
-class NewsIndex extends React.Component {
+class NewsIndex extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -34,7 +34,7 @@ class NewsIndex extends React.Component {
 						</div>
 
 						<ul className='panel'>
-							{Object.keys(this.state.data).map((fname) => <li key={fname} style={{paddingBottom: '0.5em'}}><Link to={`/news/${fname}`}>{fname}</Link> - {this.state.data[fname].firstline}</li>).reverse()}
+							{Object.keys(this.state.data).map((fname) => <li key={fname} style={{paddingBottom: '0.5em'}}><Link href={`/news/${fname}`}>{fname}</Link> - {this.state.data[fname].firstline}</li>).reverse()}
 						</ul>
 					</div>
 				</div>
@@ -52,4 +52,4 @@ class NewsIndex extends React.Component {
 	}
 };
 
-export default withRouter(NewsIndex);
+export default NewsIndex;

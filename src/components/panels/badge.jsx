@@ -1,6 +1,6 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
-class Badge extends React.Component {
+class Badge extends Component {
 	constructor(props) {
 		super(props);
 

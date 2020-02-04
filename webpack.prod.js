@@ -6,6 +6,7 @@ const {
 } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CompressionWebpackPlugin = require('compression-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 
 module.exports = env => {
@@ -17,6 +18,12 @@ module.exports = env => {
 			filename: 'main.[contentHash].js',
 			publicPath: '/'
 		},
+		resolve: {
+			alias: {
+				'react': 'preact/compat',
+            	'react-dom': 'preact/compat',
+			},
+		},
 		module: {
 			rules: [{
 					test: /\.(js|jsx)$/,
@@ -24,8 +31,12 @@ module.exports = env => {
 					use: {
 						loader: 'babel-loader',
 						options: {
-							presets: ['@babel/preset-env', '@babel/preset-react'],
-							plugins: ['react-loadable/babel', '@babel/plugin-syntax-dynamic-import']
+							presets: ['@babel/preset-env'],
+							plugins: [
+								['transform-react-jsx', {
+									'pragma': 'h'
+								}], '@babel/plugin-syntax-dynamic-import'
+							]
 						}
 					}
 				},
@@ -39,10 +50,12 @@ module.exports = env => {
 							options: {
 								// parser: 'sugarss',
 								plugins: (loader) => [
-									require('postcss-import')({ root: loader.resourcePath }),
+									require('postcss-import')({
+										root: loader.resourcePath
+									}),
 									require('postcss-preset-env')(),
 									require('cssnano')()
-								  ]
+								]
 							}
 						}
 					]
@@ -97,14 +110,13 @@ module.exports = env => {
 				{
 					test: /\.(md)$/,
 					use: [{
-						loader: 'url-loader',
-						options: {
-							limit: 9000,
-							outputPath: 'content',
-							publicPath: '/content',
-							name: '[name].[hash].[ext]'
+							loader: "html-loader"
 						},
-					}, ],
+						{
+							loader: "markdown-loader",
+							options: {}
+						}
+					],
 				},
 			],
 
@@ -149,6 +161,7 @@ module.exports = env => {
 					to: ''
 				},
 			]),
+			// new BundleAnalyzerPlugin()
 		]
 	};
 };

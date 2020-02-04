@@ -1,10 +1,10 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 
 //panels
 import PasswordRecoverPanel from '../panels/password_recover.jsx';
 
-class PasswordRecover extends React.Component {
+class PasswordRecover extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -28,10 +28,10 @@ class PasswordRecover extends React.Component {
 		return (
 			<div className='page constrained'>
 				<Panel />
-				<Link to='/' className='centered'>Return Home</Link>
+				<Link href='/' className='centered'>Return Home</Link>
 			</div>
 		);
 	}
 };
 
-export default withRouter(PasswordRecover);
+export default PasswordRecover;

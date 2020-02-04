@@ -1,7 +1,7 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 
-class PageNotFound extends React.Component {
+class PageNotFound extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -17,10 +17,10 @@ class PageNotFound extends React.Component {
 		return (
 			<div className='page centered' style={style}>
 				<h1>Page Not Found</h1>
-				<Link to='/'>Return Home</Link>
+				<Link href='/'>Return Home</Link>
 			</div>
 		);
 	}
 };
 
-export default withRouter(PageNotFound);
+export default PageNotFound;

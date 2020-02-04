@@ -1,11 +1,11 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 import queryString from 'query-string';
 
 //panels
 import PasswordResetPanel from '../panels/password_reset.jsx';
 
-class PasswordReset extends React.Component {
+class PasswordReset extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -30,10 +30,10 @@ class PasswordReset extends React.Component {
 		return (
 			<div className='page constrained'>
 				<Panel />
-				<Link to='/' className='centered'>Return Home</Link>
+				<Link href='/' className='centered'>Return Home</Link>
 			</div>
 		);
 	}
 };
 
-export default withRouter(PasswordReset);
+export default PasswordReset;

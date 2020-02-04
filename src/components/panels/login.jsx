@@ -1,12 +1,14 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import { Component, h } from 'preact';
 
-import { login } from '../../actions/account.js';
+import { connect } from 'unistore/preact'
+
+// import { login } from '../../actions/account.js';
 import { validateEmail } from '../../../common/utilities.js';
 import Axios from 'axios';
+import { actions } from '../../actions/index.js';
+import { route } from 'preact-router';
 
-class Login extends React.Component {
+class Login extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -14,6 +16,7 @@ class Login extends React.Component {
 			password: '',
 			warning: ''
 		};
+		console.log(this.props)
 	}
 
 	render() {
@@ -58,21 +61,14 @@ class Login extends React.Component {
 		})
 
 		let json = result.data;
-
+		console.log('Current props',this)
 		this.props.login(
 			json.id,
 			json.email,
 			json.username
 		);
 
-		if (this.props.onSuccess) {
-			this.props.onSuccess(json.msg); //NOTE: could use this as a redirect to a special offer or sonmething
-		}
-
-		else if (xhr.status === 400) {
-			this.setWarning(xhr.responseText);
-		}
-		// this.clearInput();
+		route('/', true)
 	}
 
 	validateInput(e) {
@@ -106,24 +102,24 @@ class Login extends React.Component {
 	}
 };
 
-Login.propTypes = {
-	login: PropTypes.func.isRequired,
+// Login.propTypes = {
+// 	login: PropTypes.func.isRequired,
 
-	onSubmit: PropTypes.func
-};
+// 	onSubmit: PropTypes.func
+// };
 
-const mapStoreToProps = (store) => {
-	return {
-		//
-	}
-};
+// const mapStoreToProps = (store) => {
+// 	return {
+// 		//
+// 	}
+// };
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		login: (id, email, username) => dispatch(login(id, email, username))
-	}
-};
+// const mapDispatchToProps = (dispatch) => {
+// 	return {
+// 		login: (id, email, username) => dispatch(login(id, email, username))
+// 	}
+// };
 
-Login = connect(mapStoreToProps, mapDispatchToProps)(Login);
+// Login = connect(mapStoreToProps, mapDispatchToProps)(Login);
 
-export default Login;
+export default connect(['account'], actions)(Login);

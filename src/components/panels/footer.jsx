@@ -1,6 +1,6 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
-class Footer extends React.Component {
+class Footer extends Component {
 	render() {
 		return (
 			<footer>

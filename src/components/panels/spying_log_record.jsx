@@ -1,8 +1,8 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
+// import PropTypes from 'prop-types';
 
-class SpyingLogRecord extends React.Component {
+class SpyingLogRecord extends Component {
 	constructor(props) {
 		super(props);
 
@@ -46,7 +46,7 @@ class SpyingLogRecord extends React.Component {
 		if (name === this.props.username) {
 			return name;
 		} else if (name) {
-			return (<Link to={`/profile?username=${name}`}>{name}</Link>);
+			return (<Link href={`/profile?username=${name}`}>{name}</Link>);
 		} else {
 			return (<span style={{color:'red'}}>???</span>);
 		}
@@ -64,15 +64,15 @@ class SpyingLogRecord extends React.Component {
 	}
 };
 
-SpyingLogRecord.propTypes = {
-	username: PropTypes.string.isRequired,
-	eventTime: PropTypes.string.isRequired,
-	attacker: PropTypes.string,
-	defender: PropTypes.string.isRequired,
-	attackingUnits: PropTypes.number,
-	success: PropTypes.string.isRequired,
-	spoilsGold: PropTypes.number.isRequired,
-	equipmentStolen: PropTypes.array.isRequired
-};
+// SpyingLogRecord.propTypes = {
+// 	username: PropTypes.string.isRequired,
+// 	eventTime: PropTypes.string.isRequired,
+// 	attacker: PropTypes.string,
+// 	defender: PropTypes.string.isRequired,
+// 	attackingUnits: PropTypes.number,
+// 	success: PropTypes.string.isRequired,
+// 	spoilsGold: PropTypes.number.isRequired,
+// 	equipmentStolen: PropTypes.array.isRequired
+// };
 
-export default withRouter(SpyingLogRecord);
+export default SpyingLogRecord;

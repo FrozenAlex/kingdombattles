@@ -1,10 +1,10 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
+// import PropTypes from 'prop-types';
 
 import Badge from './badge.jsx';
 import PossibleBadges from './../../assets/badges.js'
 
-class BadgeList extends React.Component {
+class BadgeList extends Component {
 	constructor(props) {
 		super(props);
 
@@ -46,8 +46,8 @@ class BadgeList extends React.Component {
 	}
 };
 
-BadgeList.propTypes = {
-	setWarning: PropTypes.func,
-};
+// BadgeList.propTypes = {
+// 	setWarning: PropTypes.func,
+// };
 
 export default BadgeList;

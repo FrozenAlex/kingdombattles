@@ -1,17 +1,18 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
 import queryString from 'query-string';
 import PropTypes from 'prop-types';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import PagedCombatLog from '../panels/paged_combat_log.jsx';
+import { route } from 'preact-router';
+import { connect } from 'unistore/preact';
 
-class CombatLog extends React.Component {
+class CombatLog extends Component {
 	constructor(props) {
 		super(props);
 
-		let params = queryString.parse(props.location.search);
+		let params = queryString.parse(props.url);
 
 		this.state = {
 			params: params,
@@ -25,14 +26,8 @@ class CombatLog extends React.Component {
 	}
 
 	componentDidMount() {
-		if (!this.props.loggedIn) {
-			this.props.history.replace('/login');
-		}
-	}
-
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
-			this.state.fetch();
+		if (!this.props.account) {
+			route('/login/', true)
 		}
 	}
 
@@ -59,10 +54,8 @@ class CombatLog extends React.Component {
 					<ButtonHeader />
 					<PagedCombatLog
 						setWarning={this.setWarning.bind(this)}
-						username={this.props.username}
 						start={this.state.start}
 						length={this.state.length}
-						getFetch={this.getFetch.bind(this)}
 						onReceived={this.onReceived.bind(this)}
 					/>
 					<ButtonHeader />
@@ -88,7 +81,7 @@ class CombatLog extends React.Component {
 	increment() {
 		let start = this.state.start + this.state.length;
 
-		this.props.history.push(`${this.props.location.pathname}?log=${start}`);
+		route(`${this.props.path}?log=${start}`, true);
 	}
 
 	decrement() {
@@ -98,13 +91,7 @@ class CombatLog extends React.Component {
 		if (start === this.state.start) {
 			return;
 		}
-
-		this.props.history.push(`${this.props.location.pathname}?log=${start}`);
-	}
-
-	//bound callbacks
-	getFetch(fn) {
-		this.setState({ fetch: fn });
+		route(`${this.props.path}?log=${start}`, true);
 	}
 
 	onReceived(data) {
@@ -116,7 +103,7 @@ class CombatLog extends React.Component {
 				return;
 			}
 
-			this.props.history.replace(`${this.props.location.pathname}?log=${start}`);
+			route(`${this.props.location.pathname}?log=${start}`, true);
 		}
 	}
 
@@ -125,24 +112,5 @@ class CombatLog extends React.Component {
 	}
 };
 
-CombatLog.propTypes = {
-	username: PropTypes.string.isRequired,
-	loggedIn: PropTypes.bool.isRequired
-};
 
-const mapStoreToProps = (store) => {
-	return {
-		username: store.account.username,
-		loggedIn: store.account.id !== 0
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-CombatLog = connect(mapStoreToProps, mapDispatchToProps)(CombatLog);
-
-export default CombatLog;
+export default connect('account')(CombatLog);

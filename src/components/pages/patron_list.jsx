@@ -1,11 +1,10 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown/with-html';
+import {Component, h} from 'preact';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
-import Markdown from '../panels/markdown.jsx';
+import RawHTML from '../utilities/RawHTML.jsx';
 
-class PatronList extends React.Component {
+class PatronList extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -32,7 +31,8 @@ class PatronList extends React.Component {
 
 						<h1 className='centered'>My Patrons On Patreon</h1>
 						<p className='centered'>You can become a patron <a href='https://www.patreon.com/krgamestudios'>here</a>.</p>
-						<Markdown url={require('../../assets/content/patron_list.md').default} setWarning={this.setWarning.bind(this)} />
+						<RawHTML html={require('../../assets/content/patron_list.md')}></RawHTML>
+
 					</div>
 				</div>
 			</div>

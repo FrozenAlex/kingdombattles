@@ -1,8 +1,8 @@
-import React from 'react';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
 import Axios from 'axios';
 
-class Signup extends React.Component {
+class Signup extends Component {
 	constructor(props) {
 		super(props);
 

@@ -1,12 +1,12 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
+// import PropTypes from 'prop-types';
 
 import Badge from './badge.jsx';
 import BadgeList from '../../assets/badges.js'
 import Axios from 'axios';
+import { connect } from 'unistore/preact';
 
-class BadgeSelect extends React.Component {
+class BadgeSelect extends Component {
 	constructor(props) {
 		super(props);
 
@@ -82,27 +82,4 @@ class BadgeSelect extends React.Component {
 
 };
 
-BadgeSelect.propTypes = {
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired,
-
-	setWarning: PropTypes.func,
-	getFetch: PropTypes.func
-};
-
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	};
-};
-
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-BadgeSelect = connect(mapStoreToProps, mapDispatchToProps)(BadgeSelect);
-
-export default BadgeSelect;
+export default connect('account')(BadgeSelect);

@@ -1,17 +1,17 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
 
-import { logout } from '../../actions/account.js';
+import { connect } from 'unistore/preact';
 import Axios from 'axios';
+import { actions } from '../../actions';
 
-class Logout extends React.Component {
+class Logout extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
 			//
 		}
+		console.log(this)
 	}
 
 	render() {
@@ -25,6 +25,7 @@ class Logout extends React.Component {
 	
 		// Wait for a response to invalidate sessions
 		this.props.logout();
+		this.props.clearProfile()
 
 		if (this.props.onClick) {
 			this.props.onClick();
@@ -32,27 +33,27 @@ class Logout extends React.Component {
 	}
 };
 
-Logout.propTypes = {
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired,
-	logout: PropTypes.func.isRequired,
+// Logout.propTypes = {
+// 	id: PropTypes.number.isRequired,
+// 	token: PropTypes.number.isRequired,
+// 	logout: PropTypes.func.isRequired,
 
-	onClick: PropTypes.func
-};
+// 	onClick: PropTypes.func
+// };
 
-function mapStoreToProps(store) {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	}
-};
+// function mapStoreToProps(store) {
+// 	return {
+// 		id: store.account.id,
+// 		token: store.account.token
+// 	}
+// };
 
-function mapDispatchToProps(dispatch) {
-	return {
-		logout: () => { dispatch(logout()) }
-	}
-};
+// function mapDispatchToProps(dispatch) {
+// 	return {
+// 		logout: () => { dispatch(logout()) }
+// 	}
+// };
 
-Logout = connect(mapStoreToProps, mapDispatchToProps)(Logout);
+// Logout = connect(mapStoreToProps, mapDispatchToProps)(Logout);
 
-export default Logout;
+export default connect('account', actions)(Logout);

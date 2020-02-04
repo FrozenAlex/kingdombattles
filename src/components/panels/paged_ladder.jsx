@@ -1,21 +1,17 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import { Component, h } from 'preact';
+import { Link } from 'preact-router';
 import PropTypes from 'prop-types';
 
 import BadgeText from './badge_text.jsx';
 import ProgressiveRainbowText from './progressive_rainbow_text.jsx';
 import Axios from 'axios';
 
-class PagedLadder extends React.Component {
+class PagedLadder extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			//TODO: data?
 		}
-
-		if (props.getFetch) {
-			props.getFetch(() => this.sendRequest('/api/game/profile/ladder', { start: this.props.start || 0, length: this.props.length || 20 }));
-		}
+		this.sendRequest('/api/game/profile/ladder', { start: this.props.start || 0, length: this.props.length || 20 });
 	}
 
 	render() {
@@ -32,7 +28,7 @@ class PagedLadder extends React.Component {
 					<div className='break' />
 
 					<div className={'row'} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-						<Link className='col centered truncate' to={`/profile?username=${this.state[key].username}`}>
+						<Link className='col centered truncate' href={`/profile?username=${this.state[key].username}`}>
 							<BadgeText name={this.state[key].activeBadge} size={'small'} centered={true}>{this.state[key].username}</BadgeText>
 						</Link>
 
@@ -42,7 +38,7 @@ class PagedLadder extends React.Component {
 					</div>
 				</div>)}
 			</div>
-		);
+		)
 	}
 
 	async sendRequest(url, args = {}) { //send a unified request, using my credentials
@@ -55,7 +51,7 @@ class PagedLadder extends React.Component {
 		} catch (e) {
 			if (e.response && e.response.data) {
 				this.props.setWarning(e.response.data)
-			}	else{
+			} else {
 				console.error(e)
 			}
 		}
@@ -71,4 +67,4 @@ PagedLadder.propTypes = {
 	onReceived: PropTypes.func
 };
 
-export default withRouter(PagedLadder);
+export default PagedLadder;

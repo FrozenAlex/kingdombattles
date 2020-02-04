@@ -1,9 +1,9 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
 import Axios from 'axios';
+import { connect } from 'unistore/preact';
 
-class AttackButton extends React.Component {
+class AttackButton extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -78,19 +78,5 @@ AttackButton.propTypes = {
 	disabled: PropTypes.bool
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	};
-};
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-AttackButton = connect(mapStoreToProps, mapDispatchToProps)(AttackButton);
-
-export default AttackButton;
+export default connect('account')(AttackButton);

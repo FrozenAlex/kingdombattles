@@ -1,12 +1,11 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 
 import CombatLogRecord from './combat_log_record.jsx';
 import Axios from 'axios';
+import { connect } from 'unistore/preact';
 
-class PagedCombatLog extends React.Component {
+class PagedCombatLog extends Component {
 	constructor(props) {
 		super(props);
 
@@ -24,7 +23,7 @@ class PagedCombatLog extends React.Component {
 		if (this.state.data.length === 0) {
 			return (
 				<div className='panel'>
-					<p className='centered'>Go and <Link to='/ladder'>attack someone!</Link></p>
+					<p className='centered'>Go and <Link href='/ladder/'>attack someone!</Link></p>
 				</div>
 			);
 		}
@@ -57,32 +56,19 @@ class PagedCombatLog extends React.Component {
 	}
 };
 
-PagedCombatLog.propTypes = {
-	id: PropTypes.number.isRequired,
-	token: PropTypes.number.isRequired,
 
-	username: PropTypes.string.isRequired,
-	start: PropTypes.number.isRequired,
-	length: PropTypes.number.isRequired,
+// const mapStoreToProps = (store) => {
+// 	return {
+// 		id: store.account.id,
+// 		token: store.account.token
+// 	};
+// };
 
-	setWarning: PropTypes.func,
-	getFetch: PropTypes.func,
-	onReceived: PropTypes.func
-};
+// const mapDispatchToProps = (dispatch) => {
+// 	return {
+// 		//
+// 	};
+// };
 
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	};
-};
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-PagedCombatLog = connect(mapStoreToProps, mapDispatchToProps)(PagedCombatLog);
-
-export default withRouter(PagedCombatLog);
+export default connect('account')(PagedCombatLog);

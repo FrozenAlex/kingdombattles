@@ -1,12 +1,12 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
+import { Link, route } from 'preact-router';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import BadgeSelectPanel from '../panels/badge_select.jsx';
+import { connect } from 'unistore/preact';
 
-class BadgeSelect extends React.Component {
+class BadgeSelect extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -16,13 +16,9 @@ class BadgeSelect extends React.Component {
 	}
 
 	componentDidMount() {
-		if (!this.props.loggedIn) {
-			this.props.history.replace('/login');
+		if (!this.props.account) {
+			route('/login/', true);
 		}
-	}
-
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		this.state.fetch();
 	}
 
 	render() {
@@ -43,7 +39,7 @@ class BadgeSelect extends React.Component {
 						</div>
 
 						<h1 className='centered'>Badge Select</h1>
-						<p className='centered'>Click on your favourite badge! <Link to='/badges/list/'>Full list here</Link>.</p>
+						<p className='centered'>Click on your favourite badge! <Link href='/badges/list/'>Full list here</Link>.</p>
 						<BadgeSelectPanel setWarning={this.setWarning.bind(this)} getFetch={ (fn) => this.setState({ fetch: fn }) } />
 					</div>
 				</div>
@@ -56,19 +52,5 @@ class BadgeSelect extends React.Component {
 	}
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		loggedIn: store.account.id !== 0
-	};
-};
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		//
-	};
-};
-
-BadgeSelect = connect(mapStoreToProps, mapDispatchToProps)(BadgeSelect);
-
-
-export default withRouter(BadgeSelect);
+export default connect('account')(BadgeSelect);

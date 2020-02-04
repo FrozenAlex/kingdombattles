@@ -1,16 +1,17 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import NewsPanel from '../panels/news.jsx';
 
-class News extends React.Component {
+class News extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			warning: '', //TODO: unified warning?
 			fetch: null
 		};
+		console.log(this)
 	}
 
 	render() {
@@ -32,7 +33,7 @@ class News extends React.Component {
 
 						<NewsPanel
 							setWarning={this.setWarning.bind(this)}
-							postId={this.props.match.params.postId}
+							postId={this.props.matches.postId}
 						/>
 					</div>
 				</div>

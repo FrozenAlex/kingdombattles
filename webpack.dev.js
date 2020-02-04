@@ -15,6 +15,12 @@ module.exports = env => {
 			sourceMapFilename: 'app.bundle.js.[name].map',
 			publicPath: '/'
 		},
+		resolve: {
+			alias: {
+				'react': 'preact/compat',
+				'react-dom': 'preact/compat',
+			},
+		},
 		devServer: {
 			contentBase: path.join(__dirname, 'dist/'),
 			compress: false,
@@ -50,7 +56,7 @@ module.exports = env => {
 			hot: true,
 			injectHot: true
 		},
-		devtool: 'source-map',
+		devtool: 'eval-source-map',
 		module: {
 			rules: [{
 					test: /(\.js$|\.jsx$)/,
@@ -58,8 +64,12 @@ module.exports = env => {
 					use: {
 						loader: 'babel-loader',
 						options: {
-							presets: ['@babel/preset-env', '@babel/preset-react'],
-							plugins: ['react-hot-loader/babel', 'react-loadable/babel', '@babel/plugin-syntax-dynamic-import']
+							presets: ['@babel/preset-env'],
+							plugins: [
+								['transform-react-jsx', {
+									'pragma': 'h'
+								}], '@babel/plugin-syntax-dynamic-import'
+							]
 						}
 					}
 				},
@@ -80,9 +90,11 @@ module.exports = env => {
 							options: {
 								// parser: 'sugarss',
 								plugins: (loader) => [
-									require('postcss-import')({ root: loader.resourcePath }),
+									require('postcss-import')({
+										root: loader.resourcePath
+									}),
 									require('postcss-preset-env')()
-								  ]
+								]
 							}
 						}
 					]
@@ -100,14 +112,14 @@ module.exports = env => {
 				},
 				{
 					test: /\.(md)$/,
-					use: {
-						loader: 'file-loader',
-						options: {
-							outputPath: 'content',
-							publicPath: '/content',
-							name: '[name].[hash].[ext]'
-						}
-					}
+					use: [{
+							loader: "html-loader"
+						},
+						{
+							loader: "markdown-loader",
+							options: {}
+						},
+					]
 				}
 			]
 		},

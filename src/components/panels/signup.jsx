@@ -1,8 +1,8 @@
-import React from 'react';
+import {Component, h} from 'preact';
 import { validateEmail } from '../../../common/utilities.js';
 import PropTypes from 'prop-types';
 
-class Signup extends React.Component {
+class Signup extends Component {
 	constructor(props) {
 		super(props);
 

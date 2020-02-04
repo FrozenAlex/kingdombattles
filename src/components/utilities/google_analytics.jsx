@@ -1,11 +1,11 @@
-import React from 'react';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
 import ReactGA from 'react-ga';
 import { Route } from 'react-router-dom';
 
 import auth from '../../../auth.json';
 
-class GoogleAnalytics extends React.Component {
+class GoogleAnalytics extends Component {
 	componentDidMount() {
 		this.logPageChange(
 			this.props.location.pathname,

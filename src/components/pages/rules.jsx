@@ -1,23 +1,15 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
-import Markdown from '../panels/markdown.jsx';
+import RawHTML from '../utilities/RawHTML.jsx';
 
-class Rules extends React.Component {
+class Rules extends Component {
 	constructor(props) {
 		super(props);
-		this.state = {
-			warning: '', //TODO: unified warning?
-			fetch: null
-		};
 	}
 
 	render() {
-		let warningStyle = {
-			display: this.state.warning.length > 0 ? 'flex' : 'none'
-		};
-
 		return (
 			<div className='page'>
 				<div className='sidePanelPage'>
@@ -26,19 +18,11 @@ class Rules extends React.Component {
 					</div>
 
 					<div className='mainPanel'>
-						<div className='warning' style={warningStyle}>
-							<p>{this.state.warning}</p>
-						</div>
-
-						<Markdown url={require('../../assets/content/rules.md').default} setWarning={this.setWarning.bind(this)} />
+						<RawHTML html={require('../../assets/content/rules.md')}/>
 					</div>
 				</div>
 			</div>
 		);
-	}
-
-	setWarning(s) {
-		this.setState({ warning: s });
 	}
 };
 

@@ -1,10 +1,10 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 import PropTypes from 'prop-types';
 
 import BadgeText from './badge_text.jsx';
 
-class CombatLogRecord extends React.Component {
+class CombatLogRecord extends Component {
 	constructor(props) {
 		super(props);
 
@@ -42,7 +42,7 @@ class CombatLogRecord extends React.Component {
 		if (name === this.props.username) {
 			return name;
 		} else {
-			return (<Link to={`/profile?username=${name}`}>{name}</Link>);
+			return (<Link href={`/profile?username=${name}`}>{name}</Link>);
 		}
 	}
 
@@ -71,4 +71,4 @@ CombatLogRecord.propTypes = {
 	attackerCasualties: PropTypes.number.isRequired
 };
 
-export default withRouter(CombatLogRecord);
+export default CombatLogRecord;

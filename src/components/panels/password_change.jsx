@@ -1,10 +1,9 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import {Component, h} from 'preact';
 import PropTypes from 'prop-types';
+import { connect } from 'unistore/preact';
 
-import { sessionChange } from '../../actions/account.js';
 
-class PasswordChange extends React.Component {
+class PasswordChange extends Component {
 	constructor(props) {
 		super(props);
 
@@ -56,8 +55,7 @@ class PasswordChange extends React.Component {
 		let form = e.target;
 		let formData = new FormData(form);
 
-		formData.append('id', this.props.id);
-		formData.append('token', this.props.token);
+		formData.append('id', this.props.account.id);
 
 		let xhr = new XMLHttpRequest();
 
@@ -66,8 +64,6 @@ class PasswordChange extends React.Component {
 				if (xhr.status === 200) {
 					let json = JSON.parse(xhr.responseText);
 
-					//on success
-					this.props.sessionChange(json.token);
 
 					if (this.props.onSuccess) {
 						this.props.onSuccess(json.msg);
@@ -126,19 +122,5 @@ PasswordChange.propTypes = {
 	onSuccess: PropTypes.func
 };
 
-const mapStoreToProps = (store) => {
-	return {
-		id: store.account.id,
-		token: store.account.token
-	};
-};
 
-const mapDispatchToProps = (dispatch) => {
-	return {
-		sessionChange: (token) => dispatch(sessionChange(token))
-	};
-};
-
-PasswordChange = connect(mapStoreToProps, mapDispatchToProps)(PasswordChange);
-
-export default PasswordChange;
+export default  connect('account')(PasswordChange);

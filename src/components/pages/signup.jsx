@@ -1,17 +1,16 @@
-import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import {Component, h} from 'preact';
+import { Link } from 'preact-router';
 
 //panels
 import SignupPanel from '../panels/signup.jsx';
 
-class Signup extends React.Component {
+class Signup extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			signedUp: ''
 		}
-
-		//TODO: referral links
+		console.log("Signuppanel", this)
 	}
 
 	render() {
@@ -30,7 +29,7 @@ class Signup extends React.Component {
 		return (
 			<div className='page constrained'>
 				<Panel />
-				<Link to='/' className='centered'>Return Home</Link>
+				<Link href='/' className='centered'>Return Home</Link>
 				<div className='break' />
 				<p className='centered'><em>(Remember to verify your email!)</em></p>
 			</div>
@@ -38,4 +37,4 @@ class Signup extends React.Component {
 	}
 };
 
-export default withRouter(Signup);
+export default Signup;

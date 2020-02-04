@@ -1,10 +1,10 @@
-import React from 'react';
+import {Component, h} from 'preact';
 
 //panels
 import CommonLinks from '../panels/common_links.jsx';
 import StatisticsPanel from '../panels/statistics.jsx';
 
-class Statistics extends React.Component {
+class Statistics extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
