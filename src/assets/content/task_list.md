@@ -22,10 +22,10 @@ Major Effort Changes
 Minor Effort Changes
 ---
 
-* Hide other people's spies.
+* ~~Hide other people's spies.~~
 * Strongest weapon / armour used shown as icon in combat log.
 * Move balance variables to a config file.
-* Refactor callback-hell (yes, it is that bad).
+* ~~Refactor callback-hell (yes, it is that bad).~~
 * Refactor - Data can be deleted.
 * Show the total equipment strength to the player on their own profile.
 * Implement banning mechanism.

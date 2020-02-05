@@ -28,7 +28,7 @@ class PagedLadder extends Component {
 					<div className='break' />
 
 					<div className={'row'} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-						<Link className='col centered truncate' href={`/profile?username=${this.state[key].username}`}>
+						<Link className='col centered truncate' href={`/profile/${this.state[key].username}`}>
 							<BadgeText name={this.state[key].activeBadge} size={'small'} centered={true}>{this.state[key].username}</BadgeText>
 						</Link>
 

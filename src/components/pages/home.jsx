@@ -41,24 +41,21 @@ class Home extends Component {
 
 		return (
 			<div className='page'>
-				<div className='sidePanelPage'>
-					<div className='sidePanel'>
-						<CommonLinks />
-					</div>
-
-					<div className='mainPanel'>
+			
+						<a className='banner center' href='/'>
+						<img src={require('../../assets/img/flag_scaled.png').default} /></a>
 						<div className='warning' style={warningStyle}>
 							<p>{this.state.warning}</p>
 						</div>
 						<h1 className='centered'>About</h1>
 						<Tagline />
 						<br />
-						<RawHTML html={require('./../../assets/content/blurb.md')}></RawHTML>
+						<RawHTML style={{width:'90%', overflow:'line-wrap'}} html={require('./../../assets/content/blurb.md')}></RawHTML>
 						<h1 className='centered'>News</h1>
 						<News length={3}/>
 						<p className='right'><Link href='/news/'>See all news...</Link></p>
-					</div>
-				</div>
+					
+				
 			</div>
 		);
 	}

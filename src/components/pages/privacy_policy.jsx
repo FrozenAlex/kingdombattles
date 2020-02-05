@@ -10,7 +10,7 @@ class PrivacyPolicy extends Component { //NOTE: react isn't liking the generic m
 			<div className='page'>
 				<div className='sidePanelPage'>
 					<div className='sidePanel'>
-						<CommonLinks />
+						
 					</div>
 
 					<div className='mainPanel'>

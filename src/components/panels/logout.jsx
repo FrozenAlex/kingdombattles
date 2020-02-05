@@ -11,7 +11,6 @@ class Logout extends Component {
 		this.state = {
 			//
 		}
-		console.log(this)
 	}
 
 	render() {
@@ -32,28 +31,5 @@ class Logout extends Component {
 		}
 	}
 };
-
-// Logout.propTypes = {
-// 	id: PropTypes.number.isRequired,
-// 	token: PropTypes.number.isRequired,
-// 	logout: PropTypes.func.isRequired,
-
-// 	onClick: PropTypes.func
-// };
-
-// function mapStoreToProps(store) {
-// 	return {
-// 		id: store.account.id,
-// 		token: store.account.token
-// 	}
-// };
-
-// function mapDispatchToProps(dispatch) {
-// 	return {
-// 		logout: () => { dispatch(logout()) }
-// 	}
-// };
-
-// Logout = connect(mapStoreToProps, mapDispatchToProps)(Logout);
 
 export default connect('account', actions)(Logout);

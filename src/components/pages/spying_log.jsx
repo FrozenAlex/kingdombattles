@@ -52,7 +52,7 @@ class SpyingLog extends Component {
 		return (
 			<div className='sidePanelPage'>
 				<div className='sidePanel'>
-					<CommonLinks />
+					
 				</div>
 
 				<div className='mainPanel'>

@@ -1,7 +1,6 @@
 import {Component, h} from 'preact';
 import { Link, route } from 'preact-router';
 import { Provider, connect } from 'unistore/preact'
-// import PropTypes from 'prop-types';
 
 import Logout from './logout.jsx';
 
@@ -12,7 +11,6 @@ class CommonLinks extends Component {
 		this.state = {
 			//
 		}
-		console.log("Common props",props)
 	}
 
 	render() {

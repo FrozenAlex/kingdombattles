@@ -40,9 +40,6 @@ class CombatLog extends Component {
 
 		return (
 			<div className='sidePanelPage'>
-				<div className='sidePanel'>
-					<CommonLinks />
-				</div>
 
 				<div className='mainPanel'>
 					<div className='warning' style={warningStyle}>

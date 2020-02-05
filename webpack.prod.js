@@ -8,6 +8,18 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CompressionWebpackPlugin = require('compression-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
+const purgecss = require('@fullhuman/postcss-purgecss')({
+	content: [
+		'./src/**/*.html',
+		'./src/**/*.jsx',
+	],
+	defaultExtractor: content => content.match(/[\w-/:]+(?<!:)/g) || [],
+	// Choose what to keep
+	// whitelist: ['btn', 'h1','h2','h3', 'p','ol','li', 'ul', 'em'], // Ignore buttons and typography
+	// whitelistPatterns: [/btn-/]
+})
+
+
 
 module.exports = env => {
 	return {
@@ -54,7 +66,9 @@ module.exports = env => {
 										root: loader.resourcePath
 									}),
 									require('postcss-preset-env')(),
-									require('cssnano')()
+									require('cssnano')(),
+									require('tailwindcss'),
+									purgecss
 								]
 							}
 						}
@@ -123,6 +137,7 @@ module.exports = env => {
 		},
 		optimization: {
 			minimize: true,
+			usedExports: true,
 			minimizer: [
 				new TerserPlugin({
 					terserOptions: {
@@ -161,7 +176,7 @@ module.exports = env => {
 					to: ''
 				},
 			]),
-			// new BundleAnalyzerPlugin()
+			new BundleAnalyzerPlugin()
 		]
 	};
 };

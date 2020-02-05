@@ -21,7 +21,7 @@ class PatronList extends Component {
 			<div className='page'>
 				<div className='sidePanelPage'>
 					<div className='sidePanel'>
-						<CommonLinks />
+						
 					</div>
 
 					<div className='mainPanel'>

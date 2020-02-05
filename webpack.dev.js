@@ -32,7 +32,6 @@ module.exports = env => {
 			overlay: {
 				errors: true
 			},
-			// liveReload: true,
 			stats: {
 				colors: true,
 				hash: false,
@@ -93,7 +92,8 @@ module.exports = env => {
 									require('postcss-import')({
 										root: loader.resourcePath
 									}),
-									require('postcss-preset-env')()
+									require('postcss-preset-env')(),
+									require('tailwindcss'),
 								]
 							}
 						}

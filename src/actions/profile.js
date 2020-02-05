@@ -18,3 +18,12 @@ export const clearProfile = () => {
 		profile:null
 	};
 }
+
+export const updateProfile = (prevState, profilePartial) => {
+	return {
+		profile:{
+			...prevState.profile,
+			...profilePartial
+		}
+	};
+}

@@ -1,4 +1,9 @@
 /* @import './reset.css';  */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* global defaults */
 * {
 	margin: 0;
@@ -408,3 +413,63 @@ pre {
 	}
 }
 
+.profileInfo {
+	margin: 10px auto;
+
+	display: flex;
+	flex-flow: row;
+	flex-wrap: wrap;
+	align-content: space-between;
+}
+
+.box {
+	flex:1;
+	align-content: center;
+	align-items: center;
+	border: rgb(100, 59, 59) solid 1px;
+	margin: 2px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.box p {
+	margin: 0;
+	padding:0;
+}
+
+.box p:nth-child(1){
+	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+}
+.box p:nth-child(2){
+	flex-grow: 2;
+	color: white;
+	/* font-size: 2px; */
+}
+
+.box p {
+	font-size: 1.2em;
+	text-align: center;
+}
+
+.action-buy {
+	padding: 5px;
+	margin: 2px;
+	background: white;
+	border: none;
+	border-radius: 10px;
+}
+
+.action-sell {
+	padding: 5px;
+	background: white;
+	border: none;
+	border-radius: 10px;
+}
+
+.siteWrapper{
+	overflow-x: hidden;
+	overflow-wrap: normal;
+}

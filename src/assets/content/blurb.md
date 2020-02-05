@@ -2,9 +2,9 @@ This is a resource accumulation game, with some similarities to idle games. The 
 
 You can follow the developer KR Game Studios here:
 
-* https://discord.gg/FQmz8TN
-* https://facebook.com/KRGameStudios
-* https://twitter.com/KRGameStudios
-* https://www.patreon.com/krgamestudios
-* https://github.com/KRGameStudios
+* [Discord](https://discord.gg/FQmz8TN)
+* [Facebook](https://facebook.com/KRGameStudios)
+* [Twitter](https://twitter.com/KRGameStudios)
+* [Patreon](https://www.patreon.com/krgamestudios)
+* [GitHub](https://github.com/KRGameStudios)
 
