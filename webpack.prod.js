@@ -176,7 +176,7 @@ module.exports = env => {
 					to: ''
 				},
 			]),
-			new BundleAnalyzerPlugin()
+			// new BundleAnalyzerPlugin()
 		]
 	};
 };
