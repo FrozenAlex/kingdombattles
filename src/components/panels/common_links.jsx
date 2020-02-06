@@ -26,13 +26,13 @@ class CommonLinks extends Component {
 			return (
 				<div className='panel'>
 					<p className='mobile centered'><Link href='/profile/'>Your Kingdom</Link></p>
-					<p className='mobile centered'><Link href='/equipment'>Your Equipment</Link></p>
+					<p className='mobile centered'><Link href='/equipment/'>Your Equipment</Link></p>
 					<p className='mobile centered'><Link href='/badges/'>Your Badges</Link></p>
-					<p className='mobile centered'><Link href='/ladder'>Attack (Game Ladder)</Link></p>
-					<p className='mobile centered'><Link href='/combatlog' >Combat Log</Link></p>
-					<p className='mobile centered'><Link href='/spyinglog'>Espionage Log</Link></p>
-					<p className='mobile centered'><Link href='/passwordchange'>Change Password</Link></p>
-					<p className='mobile centered'><Link href='/tasklist'>Task List</Link></p>
+					<p className='mobile centered'><Link href='/ladder/'>Attack (Game Ladder)</Link></p>
+					<p className='mobile centered'><Link href='/combatlog/' >Combat Log</Link></p>
+					<p className='mobile centered'><Link href='/spyinglog/'>Espionage Log</Link></p>
+					<p className='mobile centered'><Link href='/passwordchange/'>Change Password</Link></p>
+					<p className='mobile centered'><Link href='/tasklist/'>Task List</Link></p>
 					<p className='mobile centered'><Link href='/patrons/' >Patron List</Link></p>
 					<p className='mobile centered'><Link href='/rules' >Rules</Link></p>
 					<p className='mobile centered'><Link href='/statistics'>Game Stats</Link></p>

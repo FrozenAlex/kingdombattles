@@ -2,7 +2,7 @@ import { Component, h } from "preact";
 import { Link } from "preact-router";
 
 //panels
-import MainLayout from "../layouts/MainLayout.jsx";
+import FullscreenLayout from "../layouts/FullscreenLayout.jsx";
 import News from "../panels/news.jsx";
 import Markdown from "markdown-to-jsx";
 import RawHTML from "../utilities/RawHTML.jsx";
@@ -58,7 +58,7 @@ class Home extends Component {
 		};
 
 		return (
-			<MainLayout>
+			<FullscreenLayout>
 				<div className="">
 					<img
 						class="max-w-xl w-full mx-auto"
@@ -77,7 +77,7 @@ class Home extends Component {
 				<p className="right">
 					<Link href="/news/">See all news...</Link>
 				</p>
-			</MainLayout>
+			</FullscreenLayout>
 		);
 	}
 

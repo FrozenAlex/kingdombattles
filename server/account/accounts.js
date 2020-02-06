@@ -63,10 +63,7 @@ router.get('/logout', logoutRequest);
 async function signupRequest(req, res) {
 	// TODO: Move functions to a separate file to keep the route file clean
 
-	// Parse form
-	let form = await parseForm(req)
-
-	let fields = form.fields;
+	let fields = req.body;
 
 	// Prevent too many clicks
 	if (isThrottled(fields.email)) {
@@ -78,7 +75,7 @@ async function signupRequest(req, res) {
 	throttle(fields.email);
 
 	//validate email, username and password
-	if (!validateEmail(fields.email) || fields.username.length < 4 || fields.username.length > 100 || fields.password.length < 8 || fields.password !== fields.retype) {
+	if (!validateEmail(fields.email) || fields.username.length < 4 || fields.username.length > 100 || fields.password.length < 8) {
 		res.status(400).write(log('Invalid signup data', fields));
 		res.end();
 		return;

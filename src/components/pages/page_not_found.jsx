@@ -1,5 +1,7 @@
 import {Component, h} from 'preact';
 import { Link } from 'preact-router';
+import MainLayout from '../layouts/MainLayout.jsx';
+
 
 class PageNotFound extends Component {
 	constructor(props) {
@@ -15,10 +17,10 @@ class PageNotFound extends Component {
 		};
 
 		return (
-			<div className='page centered' style={style}>
+			<MainLayout>
 				<h1>Page Not Found</h1>
 				<Link href='/'>Return Home</Link>
-			</div>
+				</MainLayout>
 		);
 	}
 };
