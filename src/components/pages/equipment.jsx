@@ -1,91 +1,74 @@
-import {Component, h} from 'preact';
-import PropTypes from 'prop-types';
+import { Component, h } from "preact";
 
-
-import Axios from 'axios';
+import Axios from "axios";
 //panels
-import CommonLinks from '../panels/common_links.jsx';
-import EquipmentPanel from '../panels/equipment.jsx';
-import { connect } from 'unistore/preact';
-import { route } from 'preact-router';
+import EquipmentPanel from "../panels/equipment.jsx";
+import { connect } from "unistore/preact";
+import { route } from "preact-router";
+import MainLayout from "../layouts/MainLayout.jsx";
 
 class Equipment extends Component {
-	constructor(props) {
-		super(props);
+  constructor(props) {
+    super(props);
 
-		this.state = {
-			fetch: null,
-			warning: ''
-		};
+    this.state = {
+      fetch: null,
+      warning: ""
+    };
+  }
 
-		
-	}
+  componentDidMount() {
+    if (!this.props.account) {
+      route("/login/", true);
+    }
+    this.getProfile(this.props.username);
+  }
 
-	componentDidMount() {
-		if (!this.props.account) {
-			route('/login/', true);
-		}
-		this.getProfile(this.props.username);
-	}
+  componentWillUnmount() {
+  }
 
-	componentWillUnmount() {
-		// this.props.clearProfile();
-	}
+  render() {
+    let warningStyle = {
+      display: this.state.warning.length > 0 ? "flex" : "none"
+    };
 
-	// componentDidUpdate(prevProps, prevState, snapshot) {
-	// 	// if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
-	// 	// 	this.state.fetch();
-	// 	// 	this.getProfile('',this.props.username);
-	// 	// }
-		
-	// }
+    return (
+      <MainLayout>
+        <div className="warning" style={warningStyle}>
+          <p>{this.state.warning}</p>
+        </div>
 
-	render() {
-		let warningStyle = {
-			display: this.state.warning.length > 0 ? 'flex' : 'none'
-		};
+        <h1 className="centered">Equipment</h1>
+        <p className="centered">
+          Your Scientists: {this.props.profile.scientists} / Your Gold:{" "}
+          {this.props.profile.gold}
+        </p>
 
-		return (
-			<div className='sidePanelPage'>
-				<div className='sidePanel'>
-					
-				</div>
+        <EquipmentPanel
+          setWarning={this.setWarning.bind(this)}
+          scientists={this.props.scientists}
+          gold={this.props.gold}
+          onSuccess={() => this.getProfile(this.props.username)}
+        />
+      </MainLayout>
+    );
+  }
 
-				<div className='mainPanel'>
-					<div className='warning' style={warningStyle}>
-						<p>{this.state.warning}</p>
-					</div>
+  setWarning(s) {
+    this.setState({ warning: s });
+  }
 
-					<h1 className='centered'>Equipment</h1>
-					<p className='centered'>Your Scientists: {this.props.profile.scientists} / Your Gold: {this.props.profile.gold}</p>
+  //gameplay functions
+  async getProfile(url, username = "") {
+    //send a unified request, using my credentials
+    // use Axios
+    let response = await Axios.get(`/api/game/profile/${username}`);
 
-					<EquipmentPanel
-						setWarning={this.setWarning.bind(this)}
-						scientists={this.props.scientists}
-						gold={this.props.gold}
-						onSuccess={() => this.getProfile(this.props.username)}
-					/>
-				</div>
-			</div>
-		);
-	}
+    //on success
+    // TODO: Implement storing scientists to store
+    // this.props.storeScientists(response.data.scientists);
+    // this.props.storeGold(response.data.gold);
+  }
+}
 
-	setWarning(s) {
-		this.setState({ warning: s });
-	}
-
-	//gameplay functions
-	async getProfile (url, username = "") { //send a unified request, using my credentials
-		// use Axios
-		let response = await Axios.get(`/api/game/profile/${username}`)
-
-		//on success
-		// TODO: Implement storing scientists to store
-		// this.props.storeScientists(response.data.scientists);
-		// this.props.storeGold(response.data.gold);
-	}
-
-};
-
-
-export default connect(['account', 'profile'])(Equipment);
+export default connect(["account", "profile"])(Equipment);

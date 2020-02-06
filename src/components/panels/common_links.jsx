@@ -2,8 +2,6 @@ import {Component, h} from 'preact';
 import { Link, route } from 'preact-router';
 import { Provider, connect } from 'unistore/preact'
 
-import Logout from './logout.jsx';
-
 class CommonLinks extends Component {
 	constructor(props) {
 		super(props);
@@ -41,8 +39,6 @@ class CommonLinks extends Component {
 					<p className='mobile centered'><Link href='/privacysettings'>Privacy Settings</Link></p>
 
 					<Extra />
-
-					<Logout onClick={ () => route('/',true) } />
 				</div>
 			);
 		} else { //if not logged in

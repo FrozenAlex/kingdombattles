@@ -24,7 +24,10 @@ const purgecss = require('@fullhuman/postcss-purgecss')({
 module.exports = env => {
 	return {
 		mode: 'production',
-		entry: `./src/index${env === 'production' ? '' : '_dev'}.jsx`,
+		entry: {
+			main: `./src/index.jsx`,
+			vendor: ['axios','markdown-to-jsx']
+		},
 		output: {
 			path: __dirname + '/dist/',
 			filename: 'main.[contentHash].js',
@@ -33,7 +36,7 @@ module.exports = env => {
 		resolve: {
 			alias: {
 				'react': 'preact/compat',
-            	'react-dom': 'preact/compat',
+				'react-dom': 'preact/compat',
 			},
 		},
 		module: {
@@ -75,7 +78,7 @@ module.exports = env => {
 					]
 				},
 				{
-					test: /\.(svg|png|gif|jpg|jpeg)$/,
+					test: /\.(png|gif|jpg|jpeg)$/,
 					use: [{
 							loader: 'file-loader',
 							options: {
@@ -110,17 +113,6 @@ module.exports = env => {
 						},
 					]
 				},
-				// {
-				// 	test: /\.(md)$/,
-				// 	use: {
-				// 		loader: 'file-loader',
-				// 		options: {
-				// 			outputPath: 'content',
-				// 			publicPath: '/content',
-				// 			name: '[name].[hash].[ext]'
-				// 		}
-				// 	}
-				// },
 				{
 					test: /\.(md)$/,
 					use: [{
@@ -132,6 +124,10 @@ module.exports = env => {
 						}
 					],
 				},
+				{
+					test: /\.svg$/,
+					loader: 'svg-inline-loader'
+				}
 			],
 
 		},
@@ -154,7 +150,17 @@ module.exports = env => {
 						removeAttributeQuotes: true
 					}
 				}),
-			]
+			],
+			splitChunks: {
+				cacheGroups: {
+					vendor: {
+						chunks: 'initial',
+						test: 'vendor',
+						name: 'vendor',
+						enforce: true
+					}
+				}
+			}
 		},
 		plugins: [
 			new CleanWebpackPlugin(),
@@ -176,7 +182,7 @@ module.exports = env => {
 					to: ''
 				},
 			]),
-			// new BundleAnalyzerPlugin()
+			new BundleAnalyzerPlugin()
 		]
 	};
 };

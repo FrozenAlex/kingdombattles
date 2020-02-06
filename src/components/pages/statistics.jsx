@@ -1,50 +1,63 @@
-import {Component, h} from 'preact';
+import { Component, h } from "preact";
 
 //panels
-import CommonLinks from '../panels/common_links.jsx';
-import StatisticsPanel from '../panels/statistics.jsx';
+import Axios from "axios";
+import MainLayout from "../layouts/MainLayout.jsx";
 
 class Statistics extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			warning: '', //TODO: unified warning?
-			fetch: null
+			warning: "", //TODO: unified warning?
+			fetch: null,
+			data: {}
 		};
 	}
 
-	componentDidUpdate(prevProps, prevState, snapshot) {
-		this.state.fetch();
+	componentDidMount() {
+		this.sendRequest('/api/game/stats/');
 	}
 
 	render() {
-		let warningStyle = {
-			display: this.state.warning.length > 0 ? 'flex' : 'none'
-		};
-
 		return (
-			<div className='page'>
-				<div className='sidePanelPage'>
-					<div className='sidePanel'>
-						
-					</div>
-
-					<div className='mainPanel'>
-						<div className='warning' style={warningStyle}>
-							<p>{this.state.warning}</p>
+			<MainLayout>
+				<h1 className="centered">Game Statistics</h1>
+				<div className="panel table noCollapse">
+					{Object.keys(this.state.data).map(key => (
+						<div key={key} className="row">
+							<p className="col">{key}:</p>
+							<p className="col">
+								{typeof this.state.data[key] === "object" ? (
+									<span style={{ color: this.state.data[key].color }}>
+										{this.state.data[key].string}
+									</span>
+								) : (
+									<span>{this.state.data[key]}</span>
+								)}
+							</p>
+							<div className="col mobile hide" />
 						</div>
-
-						<h1 className='centered'>Game Statistics</h1>
-						<StatisticsPanel setWarning={this.setWarning.bind(this)} getFetch={ (fn) => this.setState({ fetch: fn }) } />
-					</div>
+					))}
 				</div>
-			</div>
+			</MainLayout>
 		);
 	}
 
 	setWarning(s) {
 		this.setState({ warning: s });
 	}
-};
+	async sendRequest(url, args = {}) {
+		try {
+			let response = await Axios.post(url, args);
+			this.setState({ data: response.data });
+		} catch (e) {
+			if (e.response && e.response.data) {
+				this.props.setWarning(e.response.data);
+			} else {
+				console.error(e);
+			}
+		}
+	}
+}
 
 export default Statistics;

@@ -100,7 +100,7 @@ module.exports = env => {
 					]
 				},
 				{
-					test: /\.(svg|png|gif|jpg|jpeg)$/,
+					test: /\.(png|gif|jpg|jpeg)$/,
 					use: {
 						loader: 'file-loader',
 						options: {
@@ -120,6 +120,10 @@ module.exports = env => {
 							options: {}
 						},
 					]
+				},
+				{
+					test: /\.svg$/,
+					loader: 'svg-inline-loader'
 				}
 			]
 		},

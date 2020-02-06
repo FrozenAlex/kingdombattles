@@ -1,64 +1,102 @@
-import {Component, h} from 'preact';
+import { Component, h } from "preact";
 
 //panels
-import CommonLinks from '../panels/common_links.jsx';
-import PrivacySettingsPanel from '../panels/privacy_settings.jsx';
-import { route } from 'preact-router';
-import { connect } from 'unistore/preact';
+import { route } from "preact-router";
+import { connect } from "unistore/preact";
+import Axios from "axios";
 
 class PrivacySettings extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			message: '',
-			warning: '' //TODO: unified warning?
+			message: "",
+			warning: "" //TODO: unified warning?
+		};
+		this.state = {
+			promotions: false
 		};
 	}
 
 	componentDidMount() {
 		if (!this.props.account) {
-			route('/login/', true);
+			route("/login/", true);
+			this.getPrivacySettings();
 		}
 	}
 
 	render() {
-		let warningStyle = {
-			display: this.state.warning.length > 0 ? 'flex' : 'none'
-		};
-
-		let Panel;
-
-		if (this.state.message) {
-			Panel = () => <p className='centered'>{this.state.message}</p>
-		} else {
-			Panel = () => <PrivacySettingsPanel id={this.props.id} token={this.props.token} onSuccess={(msg) => this.setState({message: msg})} setWarning={this.setWarning.bind(this)} />;
-		}
-
 		return (
-			<div className='page'>
-				<div className='sidePanelPage'>
-					<div className='sidePanel'>
-						
+			<MainLayout>
+				<form
+					className="table noCollapse"
+					action="/api/account/privacy"
+					method="post"
+					onSubmit={this.submit.bind(this)}
+				>
+					<hr />
+					<div className="break" />
+
+					<div className="row">
+						<label className="col" htmlFor="promotions">
+							Allow Emails:
+						</label>
+						<input
+							className="col"
+							id="promotions"
+							type="checkbox"
+							name="promotions"
+							checked={this.state.promotions}
+							onChange={this.updatePromotions.bind(this)}
+						/>
+						<div className="col double mobile hide" />
 					</div>
 
-					<div className='mainPanel'>
-						<div className='warning' style={warningStyle}>
-							<p>{this.state.warning}</p>
-						</div>
+					<div className="break" />
 
-						<h1 className='centered'>Privacy Settings</h1>
-						<Panel />
+					<div className="row">
+						<button className="col" type="submit">
+							Update Privacy Settings
+						</button>
+						<div className="col mobile hide" />
+						<div className="col double mobile hide" />
 					</div>
-				</div>
-			</div>
+				</form>
+			</MainLayout>
 		);
 	}
 
 	setWarning(s) {
 		this.setState({ warning: s });
 	}
-};
 
+	//TODO: Fix this copy/pasted crap
+	//gameplay functions
+	async sendRequest(url, args = {}) {
+		//send a unified request, using my credentials
+		//build the XHR
+		let result = await Axios.post(url, args);
 
+		let json = result.data;
+		this.setState({
+			promotions: json.promotions
+		});
+	}
 
-export default connect('account')(PrivacySettings);
+	async getPrivacySettings() {
+		let result = await Axios.get("/api/account/privacy");
+
+		this.setState({
+			promotions: result.data.promotions
+		});
+	}
+
+	clearInput() {
+		this.setState({ promotions: false });
+	}
+
+	updatePromotions(evt) {
+		this.setState({ promotions: !this.state.promotions });
+	}
+}
+
+export default connect("account")(PrivacySettings);

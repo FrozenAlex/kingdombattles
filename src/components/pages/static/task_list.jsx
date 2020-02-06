@@ -1,8 +1,7 @@
 import {Component, h} from 'preact';
 
 //panels
-import CommonLinks from '../panels/common_links.jsx';
-import RawHTML from '../utilities/RawHTML.jsx';
+import RawHTML from '../../utilities/RawHTML.jsx';
 
 class TaskList extends Component {
 	render() {
@@ -15,7 +14,7 @@ class TaskList extends Component {
 
 					<div className='mainPanel'>
 						<h1 className='centered'>Kingdom Battles Developer Task List</h1>
-						<RawHTML html={require('./../../assets/content/task_list.md')}/>
+						<RawHTML html={require('./../../../assets/content/task_list.md')}/>
 					</div>
 				</div>
 			</div>
