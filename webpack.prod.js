@@ -26,7 +26,7 @@ module.exports = env => {
 		mode: 'production',
 		entry: {
 			main: `./src/index.jsx`,
-			vendor: ['axios','markdown-to-jsx']
+			vendor: ['axios', 'markdown-to-jsx']
 		},
 		output: {
 			path: __dirname + '/dist/',
@@ -172,6 +172,17 @@ module.exports = env => {
 					level: 9,
 				},
 				threshold: 1
+			}),
+			new CompressionWebpackPlugin({ // Brotli
+				filename: '[path].br[query]',
+				algorithm: 'brotliCompress',
+				test: /\.(js|css|html|svg)$/,
+				compressionOptions: {
+					level: 11
+				},
+				threshold: 1,
+				minRatio: 0.9,
+				deleteOriginalAssets: false,
 			}),
 			new CopyPlugin([{
 					from: './content',

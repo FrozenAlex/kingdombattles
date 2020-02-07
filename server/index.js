@@ -6,6 +6,7 @@ require('dotenv').config();
 let express = require('express');
 let compression = require('compression');
 let expressSession = require('express-session')
+var expressStaticGzip = require("express-static-gzip");
 let app = express();
 let http = require('http').Server(app);
 let bodyParser = require('body-parser');
@@ -19,18 +20,31 @@ app.use(passport.session());
 
 let MyStore = require('./util/sessionStore')(expressSession)
 
-// Compress everything in here. Offload it to nginx if you can
-app.use(compression({
-	level: 6
-}))
-
 // Don't cache index.html
 app.get('/', (req, res)=>{
 	res.sendFile(path.join(__dirname, "../dist/index.html"))
 })
+
+// Shortcut for staticly compressed files
+app.use("/", expressStaticGzip(path.resolve(__dirname + '/../dist/'), {
+	enableBrotli: true,
+	maxAge:  1000*60*60*24*30,
+	orderPreference: ['br','gzip'],
+	serveStatic: {
+		etag:false
+	}
+}));
+
+// Compress everything else
+app.use(compression({
+	level: 6
+}))
+
+
 // Static files
 app.use('/', express.static(path.resolve(__dirname + '/../dist/'), {
-	maxAge: 1000*60*60*24*30
+	maxAge: 1000*60*60*24*30,
+	etag: false
 }));
 
 // Use a session for each client
