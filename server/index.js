@@ -22,7 +22,10 @@ let MyStore = require('./util/sessionStore')(expressSession)
 
 // Don't cache index.html
 app.get('/', (req, res)=>{
-	res.sendFile(path.join(__dirname, "../dist/index.html"))
+	res.set({'Cache-Control': 'max-age=30000'});
+	res.sendFile(path.join(__dirname, "../dist/index.html"), {
+
+	})
 })
 
 // Shortcut for staticly compressed files
