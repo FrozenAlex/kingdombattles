@@ -139,6 +139,7 @@ app.post('/api/easteregg', (req, res) => {
 
 //fallback to index.html
 app.get('*', (req, res) => {
+	res.set({'Cache-Control': 'max-age=30000'});
 	res.sendFile(path.resolve(__dirname + '/../dist/index.html'));
 });
 
