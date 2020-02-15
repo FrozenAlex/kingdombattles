@@ -138,15 +138,22 @@ function runCombatTick() {
 				undefended = true; //recruits only
 			}
 
-			// For now no performance optimisations
-			// TODO: Make the requests in parallel
 			let equipmentQuery = 'SELECT * FROM equipment WHERE accountId = ? AND type = "Weapon";';
 			let consumableQuery = 'SELECT * FROM equipment WHERE accountId = ? AND type = "Consumable";';
 
-			let attackerEquipment = (await pool.promise().query(equipmentQuery, [pendingCombat.attackerId]))[0]
-			let attackerConsumables = (await pool.promise().query(consumableQuery, [pendingCombat.attackerId]))[0]
-			let defenderEquipment = (await pool.promise().query(equipmentQuery, [pendingCombat.defenderId]))[0]
-			let defenderConsumables = (await pool.promise().query(consumableQuery, [pendingCombat.defenderId]))[0]
+
+			let battleStats = await Promise.all(
+				pool.promise().query(equipmentQuery, [pendingCombat.attackerId]), // Attacker equipment
+				pool.promise().query(consumableQuery, [pendingCombat.attackerId]), // Attacker consumables
+				pool.promise().query(equipmentQuery, [pendingCombat.defenderId]), // Defender equipment
+				pool.promise().query(consumableQuery, [pendingCombat.defenderId]) // Defender consumables
+			)
+
+			// 0 in the end gets rows
+			let attackerEquipment = battleStats[0][0]
+			let attackerConsumables = battleStats[1][0]
+			let defenderEquipment = battleStats[2][0]
+			let defenderConsumables = battleStats[3][0]
 
 			// Get equipment parameters
 			let equipmentStats = getEquipmentStatistics();
