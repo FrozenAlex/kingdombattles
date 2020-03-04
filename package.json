@@ -47,7 +47,7 @@
     "express-static-gzip": "^2.0.6",
     "firstline": "^2.0.2",
     "forever": "^2.0.0",
-    "formidable": "^1.2.1",
+    "formidable": "^1.2.2",
     "markdown-to-jsx": "^6.10.3",
     "mysql2": "^2.1.0",
     "passport": "^0.4.1",
