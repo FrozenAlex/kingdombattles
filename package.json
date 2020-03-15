@@ -81,7 +81,7 @@
     "postcss-import": "^12.0.1",
     "postcss-loader": "^3.0.0",
     "postcss-preset-env": "^6.7.0",
-    "preact": "^10.3.0",
+    "preact": "^10.3.4",
     "preact-async-route": "^2.2.1",
     "preact-router": "^3.2.1",
     "proptypes": "^1.1.0",
