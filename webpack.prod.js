@@ -41,93 +41,93 @@ module.exports = env => {
 		},
 		module: {
 			rules: [{
-					test: /\.(js|jsx)$/,
-					exclude: /(node_modules)/,
-					use: {
-						loader: 'babel-loader',
+				test: /\.(js|jsx)$/,
+				exclude: /(node_modules)/,
+				use: {
+					loader: 'babel-loader',
+					options: {
+						presets: ['@babel/preset-env'],
+						plugins: [
+							['transform-react-jsx', {
+								'pragma': 'h'
+							}], '@babel/plugin-syntax-dynamic-import'
+						]
+					}
+				}
+			},
+			{
+				test: /\.(css)$/,
+				use: [
+					MiniCssExtractPlugin.loader,
+					"css-loader",
+					{
+						loader: 'postcss-loader',
 						options: {
-							presets: ['@babel/preset-env'],
-							plugins: [
-								['transform-react-jsx', {
-									'pragma': 'h'
-								}], '@babel/plugin-syntax-dynamic-import'
+							// parser: 'sugarss',
+							plugins: (loader) => [
+								require('postcss-import')({
+									root: loader.resourcePath
+								}),
+								require('postcss-preset-env')(),
+								require('cssnano')(),
+								require('tailwindcss'),
+								purgecss
 							]
 						}
 					}
+				]
+			},
+			{
+				test: /\.(png|gif|jpg|jpeg)$/,
+				use: [{
+					loader: 'file-loader',
+					options: {
+						outputPath: 'images',
+						publicPath: '/images',
+						name: '[name].[hash].[ext]'
+					}
 				},
 				{
-					test: /\.(css)$/,
-					use: [
-						MiniCssExtractPlugin.loader,
-						"css-loader",
-						{
-							loader: 'postcss-loader',
-							options: {
-								// parser: 'sugarss',
-								plugins: (loader) => [
-									require('postcss-import')({
-										root: loader.resourcePath
-									}),
-									require('postcss-preset-env')(),
-									require('cssnano')(),
-									require('tailwindcss'),
-									purgecss
-								]
-							}
+					loader: 'image-webpack-loader',
+					options: {
+						mozjpeg: {
+							progressive: true,
+							quality: 65
+						},
+						// optipng.enabled: false will disable optipng
+						optipng: {
+							enabled: false,
+						},
+						pngquant: {
+							quality: [0.65, 0.90],
+							speed: 4
+						},
+						gifsicle: {
+							interlaced: false,
+						},
+						// the webp option will enable WEBP
+						webp: {
+							quality: 75
 						}
-					]
+					}
+				},
+				]
+			},
+			{
+				test: /\.(md)$/,
+				use: [{
+					loader: "html-loader"
 				},
 				{
-					test: /\.(png|gif|jpg|jpeg)$/,
-					use: [{
-							loader: 'file-loader',
-							options: {
-								outputPath: 'images',
-								publicPath: '/images',
-								name: '[name].[hash].[ext]'
-							}
-						},
-						{
-							loader: 'image-webpack-loader',
-							options: {
-								mozjpeg: {
-									progressive: true,
-									quality: 65
-								},
-								// optipng.enabled: false will disable optipng
-								optipng: {
-									enabled: false,
-								},
-								pngquant: {
-									quality: [0.65, 0.90],
-									speed: 4
-								},
-								gifsicle: {
-									interlaced: false,
-								},
-								// the webp option will enable WEBP
-								webp: {
-									quality: 75
-								}
-							}
-						},
-					]
-				},
-				{
-					test: /\.(md)$/,
-					use: [{
-							loader: "html-loader"
-						},
-						{
-							loader: "markdown-loader",
-							options: {}
-						}
-					],
-				},
-				{
-					test: /\.svg$/,
-					loader: 'svg-inline-loader'
+					loader: "markdown-loader",
+					options: {}
 				}
+				],
+			},
+			{
+				test: /\.svg$/,
+				loader: 'svg-inline-loader'
+			}
 			],
 
 		},
@@ -184,15 +184,15 @@ module.exports = env => {
 				minRatio: 0.9,
 				deleteOriginalAssets: false,
 			}),
-			new CopyPlugin([{
+			new CopyPlugin({
+				patterns: [{
 					from: './content',
 					to: 'content'
-				},
-				{
+				}, {
 					from: './public',
-					to: ''
-				},
-			]),
+					to: './'
+				}]
+			}),
 			// new BundleAnalyzerPlugin()
 		]
 	};
